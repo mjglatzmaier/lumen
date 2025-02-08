@@ -186,6 +186,18 @@ bool createLogicalDevice(VulkanRenderer* renderer) {
 }
 
 void createSwapchain(VulkanRenderer* renderer) {
+    // ✅ Get latest window size
+    int width = 0, height = 0;
+    glfwGetFramebufferSize(renderer->window, &width, &height);
+
+    // ✅ Wait until window is non-zero in size (prevents invalid swapchain)
+    while (width == 0 || height == 0) {
+        glfwGetFramebufferSize(renderer->window, &width, &height);
+        glfwWaitEvents();  // Prevent 100% CPU usage while waiting
+    }
+    renderer->swapchainExtent.width = width;
+    renderer->swapchainExtent.height = height;
+
     // ✅ Query surface capabilities
     VkSurfaceCapabilitiesKHR capabilities;
     vkGetPhysicalDeviceSurfaceCapabilitiesKHR(renderer->physicalDevice, renderer->surface, &capabilities);
@@ -472,25 +484,31 @@ void createCommandPool(VulkanRenderer* renderer) {
 }
 
 void drawFrame(VulkanRenderer* renderer) {
-    if (renderer->graphicsQueue == VK_NULL_HANDLE) {
-        fprintf(stderr, "❌ Error: graphicsQueue is NULL before vkQueueSubmit!\n");
-        exit(1);
-    }
-    if (renderer->presentQueue == VK_NULL_HANDLE) {
-        fprintf(stderr, "❌ Error: presentQueue is NULL before vkQueuePresentKHR!\n");
-        exit(1);
-    }
 
-    if (renderer->framebufferResized) {
-        recreateSwapchain(renderer);  // ✅ Recreate swapchain if resized
-        renderer->framebufferResized = false;
-    }
+    // ✅ Handle window resize event first
+    // if (renderer->framebufferResized) {
+    //     vkDeviceWaitIdle(renderer->device);
+    //     recreateSwapchain(renderer);
+    //     return;  // ✅ Prevents rendering on an invalid swapchain
+    // }
 
     uint32_t imageIndex;
-    VkResult result = vkAcquireNextImageKHR(renderer->device, renderer->swapchain, UINT64_MAX,
-                                            renderer->imageAvailableSemaphore, VK_NULL_HANDLE, &imageIndex);
+    VkFence inFlightFence = renderer->inFlightFences[renderer->currentFrame];
 
-    if (result != VK_SUCCESS && result != VK_SUBOPTIMAL_KHR) {
+    // ✅ Wait for the previous frame to finish
+    vkWaitForFences(renderer->device, 1, &inFlightFence, VK_TRUE, UINT64_MAX);
+    vkResetFences(renderer->device, 1, &inFlightFence);  // ✅ Reset fence for next use
+
+    VkSemaphore imageAvailableSemaphore = renderer->imageAvailableSemaphores[renderer->currentFrame];
+    VkSemaphore renderFinishedSemaphore = renderer->renderFinishedSemaphores[renderer->currentFrame];
+
+    VkResult result = vkAcquireNextImageKHR(renderer->device, renderer->swapchain, UINT64_MAX,
+                                            imageAvailableSemaphore, VK_NULL_HANDLE, &imageIndex);
+
+    if (result == VK_ERROR_OUT_OF_DATE_KHR || renderer->framebufferResized) {
+        recreateSwapchain(renderer);
+        return;
+    }else if (result != VK_SUCCESS && result != VK_SUBOPTIMAL_KHR) {
         fprintf(stderr, "❌ Failed to acquire swapchain image!\n");
         exit(1);
     }
@@ -498,7 +516,7 @@ void drawFrame(VulkanRenderer* renderer) {
     VkSubmitInfo submitInfo = {0};
     submitInfo.sType = VK_STRUCTURE_TYPE_SUBMIT_INFO;
 
-    VkSemaphore waitSemaphores[] = {renderer->imageAvailableSemaphore};
+    VkSemaphore waitSemaphores[] = {imageAvailableSemaphore};
     VkPipelineStageFlags waitStages[] = {VK_PIPELINE_STAGE_COLOR_ATTACHMENT_OUTPUT_BIT};
     submitInfo.waitSemaphoreCount = 1;
     submitInfo.pWaitSemaphores = waitSemaphores;
@@ -507,14 +525,11 @@ void drawFrame(VulkanRenderer* renderer) {
     submitInfo.commandBufferCount = 1;
     submitInfo.pCommandBuffers = &renderer->commandBuffers[imageIndex];
 
-    VkSemaphore signalSemaphores[] = {renderer->renderFinishedSemaphore};
+    VkSemaphore signalSemaphores[] = {renderFinishedSemaphore};
     submitInfo.signalSemaphoreCount = 1;
     submitInfo.pSignalSemaphores = signalSemaphores;
 
-    // ✅ Print queue info before submitting
-    //fprintf(stdout, "🟢 Submitting to queue: %p\n", (void*)renderer->graphicsQueue);
-
-    if (vkQueueSubmit(renderer->graphicsQueue, 1, &submitInfo, VK_NULL_HANDLE) != VK_SUCCESS) {
+    if (vkQueueSubmit(renderer->graphicsQueue, 1, &submitInfo, inFlightFence) != VK_SUCCESS) {
         fprintf(stderr, "❌ Failed to submit draw command buffer!\n");
         exit(1);
     }
@@ -532,6 +547,9 @@ void drawFrame(VulkanRenderer* renderer) {
         fprintf(stderr, "❌ Failed to present swapchain image!\n");
         exit(1);
     }
+
+    // ✅ Cycle to the next frame
+    renderer->currentFrame = (renderer->currentFrame + 1) % MAX_FRAMES_IN_FLIGHT;
 }
 
 VkShaderModule createShaderModule(VkDevice device, const char* filename) {
@@ -708,39 +726,81 @@ bool createGraphicsPipeline(VulkanRenderer* renderer) {
 }
 
 void recreateSwapchain(VulkanRenderer* renderer) {
-    vkDeviceWaitIdle(renderer->device);  // ✅ Ensure device is idle before recreating
+    vkDeviceWaitIdle(renderer->device);  // ✅ Ensure GPU has finished work
 
-    cleanupSwapchain(renderer);  // ✅ Destroy old swapchain
+    cleanupSwapchain(renderer);  // ✅ Destroy old swapchain safely
 
-    createSwapchain(renderer);  // ✅ Create new swapchain
+    createSwapchain(renderer);  // ✅ Recreate swapchain with new window size
     createImageViews(renderer);
     createFramebuffers(renderer);
+
+    // ✅ Reset command buffers to avoid referencing old framebuffers
+    vkFreeCommandBuffers(renderer->device, renderer->commandPool, renderer->swapchainImageCount, renderer->commandBuffers);
+    createCommandBuffers(renderer);
+
+    renderer->framebufferResized = 0;  // ✅ Reset flag AFTER swapchain is ready
 }
+
+
 
 void createSyncObjects(VulkanRenderer* renderer) {
     VkSemaphoreCreateInfo semaphoreInfo = {0};
     semaphoreInfo.sType = VK_STRUCTURE_TYPE_SEMAPHORE_CREATE_INFO;
 
-    if (vkCreateSemaphore(renderer->device, &semaphoreInfo, NULL, &renderer->imageAvailableSemaphore) != VK_SUCCESS ||
-        vkCreateSemaphore(renderer->device, &semaphoreInfo, NULL, &renderer->renderFinishedSemaphore) != VK_SUCCESS) {
-        fprintf(stderr, "❌ Failed to create semaphores!\n");
-        exit(1);
+    VkFenceCreateInfo fenceInfo = {0};
+    fenceInfo.sType = VK_STRUCTURE_TYPE_FENCE_CREATE_INFO;
+    fenceInfo.flags = VK_FENCE_CREATE_SIGNALED_BIT;  // ✅ Start in signaled state
+
+    for (size_t i = 0; i < MAX_FRAMES_IN_FLIGHT; i++) {
+        if (vkCreateSemaphore(renderer->device, &semaphoreInfo, NULL, &renderer->imageAvailableSemaphores[i]) != VK_SUCCESS ||
+            vkCreateSemaphore(renderer->device, &semaphoreInfo, NULL, &renderer->renderFinishedSemaphores[i]) != VK_SUCCESS ||
+            vkCreateFence(renderer->device, &fenceInfo, NULL, &renderer->inFlightFences[i]) != VK_SUCCESS) {
+            fprintf(stderr, "❌ Failed to create synchronization objects for frame %zu!\n", i);
+            exit(1);
+        }
     }
+
+    renderer->currentFrame = 0;  // ✅ Initialize frame counter
 }
 
 void cleanupSwapchain(VulkanRenderer* renderer) {
+    vkDeviceWaitIdle(renderer->device);  // ✅ Ensure all GPU work is done
+
+    // ✅ Free command buffers before destroying framebuffers
+    vkFreeCommandBuffers(renderer->device, renderer->commandPool, renderer->swapchainImageCount, renderer->commandBuffers);
+
     for (uint32_t i = 0; i < renderer->swapchainImageCount; i++) {
         vkDestroyFramebuffer(renderer->device, renderer->swapchainFramebuffers[i], NULL);
         vkDestroyImageView(renderer->device, renderer->swapchainImageViews[i], NULL);
     }
+
     vkDestroySwapchainKHR(renderer->device, renderer->swapchain, NULL);
-    vkDestroySurfaceKHR(renderer->instance, renderer->surface, NULL);
 }
 
+
+
 void cleanupVulkan(VulkanRenderer* renderer) {
+    vkDeviceWaitIdle(renderer->device);  // ✅ Ensure all GPU work is completed before cleanup
+
+    // ✅ Wait for all in-flight frames to complete before cleanup
+    for (size_t i = 0; i < MAX_FRAMES_IN_FLIGHT; i++) {
+        vkWaitForFences(renderer->device, 1, &renderer->inFlightFences[i], VK_TRUE, UINT64_MAX);
+    }
+
+    cleanupSwapchain(renderer);  // ✅ Cleanup swapchain-related resources
+
+    vkDestroyRenderPass(renderer->device, renderer->renderPass, NULL);
     vkDestroyPipeline(renderer->device, renderer->graphicsPipeline, NULL);
     vkDestroyPipelineLayout(renderer->device, renderer->pipelineLayout, NULL);
-    vkDestroyRenderPass(renderer->device, renderer->renderPass, NULL);
+    vkDestroyCommandPool(renderer->device, renderer->commandPool, NULL);
+
+    for (size_t i = 0; i < MAX_FRAMES_IN_FLIGHT; i++) {
+        vkDestroySemaphore(renderer->device, renderer->imageAvailableSemaphores[i], NULL);
+        vkDestroySemaphore(renderer->device, renderer->renderFinishedSemaphores[i], NULL);
+        vkDestroyFence(renderer->device, renderer->inFlightFences[i], NULL);
+    }
+
     vkDestroyDevice(renderer->device, NULL);
+    vkDestroySurfaceKHR(renderer->instance, renderer->surface, NULL);
     vkDestroyInstance(renderer->instance, NULL);
 }

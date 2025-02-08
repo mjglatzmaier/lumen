@@ -5,7 +5,11 @@
 #include <GLFW/glfw3.h>
 #include <stdbool.h>
 
+#define MAX_FRAMES_IN_FLIGHT 2  // ✅ Double-buffering to prevent synchronization issues
+
+
 typedef struct VulkanRenderer {
+    GLFWwindow* window;
     VkInstance instance;
     VkPhysicalDevice physicalDevice;
     VkDevice device;
@@ -24,10 +28,12 @@ typedef struct VulkanRenderer {
     VkPipeline graphicsPipeline;
     VkCommandPool commandPool;
     VkCommandBuffer* commandBuffers;
-    VkSemaphore imageAvailableSemaphore;
-    VkSemaphore renderFinishedSemaphore;
+    VkSemaphore imageAvailableSemaphores[MAX_FRAMES_IN_FLIGHT];
+    VkSemaphore renderFinishedSemaphores[MAX_FRAMES_IN_FLIGHT];
+    VkFence inFlightFences[MAX_FRAMES_IN_FLIGHT];
     uint32_t graphicsQueueFamilyIndex;
     uint32_t presentQueueFamilyIndex;
+    uint32_t currentFrame;
     bool framebufferResized;
 } VulkanRenderer;
 

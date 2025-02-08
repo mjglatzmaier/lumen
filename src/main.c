@@ -25,9 +25,8 @@ int main() {
         return EXIT_FAILURE;
     }
 
-    glfwSetFramebufferSizeCallback(window, framebufferResizeCallback);
-
     VulkanRenderer renderer = {0};
+    renderer.window = window;
     createVulkanInstance(&renderer);
     createSurface(&renderer, window);
     selectPhysicalDevice(&renderer);
@@ -41,12 +40,19 @@ int main() {
     createCommandBuffers(&renderer);
     createSyncObjects(&renderer);
 
+    // ✅ Store the VulkanRenderer pointer in the GLFW window before setting the callback
+    glfwSetWindowUserPointer(window, &renderer);
+    glfwSetFramebufferSizeCallback(window, framebufferResizeCallback);
+
     while (!glfwWindowShouldClose(window)) {
         glfwPollEvents();
-        drawFrame(&renderer);
+        // ✅ Only render when swapchain is valid
+        if (!renderer.framebufferResized) {
+            drawFrame(&renderer);
+        }
     }
 
-    cleanupSwapchain(&renderer);
+    //cleanupSwapchain(&renderer);
     cleanupVulkan(&renderer);
     glfwDestroyWindow(window);
     glfwTerminate();
