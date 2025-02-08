@@ -1,8 +1,13 @@
 #include "vulkan_renderer.h"
+#include "../../input/input.c"
 #include "../../core/platform.h"
 #include <stdio.h>
 #include <stdlib.h>
 #include <string.h>
+#include <tgmath.h>
+
+
+/* ---------------------------------- VULKAN IMPLEMENTATION --------------------------------- */
 
 bool createVulkanInstance(VulkanRenderer* renderer) {
 
@@ -197,10 +202,17 @@ void createSwapchain(VulkanRenderer* renderer) {
     }
     renderer->swapchainExtent.width = width;
     renderer->swapchainExtent.height = height;
-
+    
     // ✅ Query surface capabilities
     VkSurfaceCapabilitiesKHR capabilities;
     vkGetPhysicalDeviceSurfaceCapabilitiesKHR(renderer->physicalDevice, renderer->surface, &capabilities);
+    //renderer->swapchainExtent = capabilities.currentExtent;
+    
+    // // ✅ Clamp within allowed limits    
+    // renderer->swapchainExtent.width = 
+    //     fmax(capabilities.minImageExtent.width, fmin(capabilities.maxImageExtent.width, renderer->swapchainExtent.width));
+    // renderer->swapchainExtent.height = 
+    //     fmax(capabilities.minImageExtent.height, fmin(capabilities.maxImageExtent.height, renderer->swapchainExtent.height));
 
     // ✅ Query available surface formats
     uint32_t formatCount;
@@ -380,12 +392,13 @@ void createFramebuffers(VulkanRenderer* renderer) {
 }
 
 void createCommandBuffers(VulkanRenderer* renderer) {
-
-    if (renderer->swapchainImageCount == 0) {
-        fprintf(stderr, "❌ Error: swapchainImageCount is 0 before allocating command buffers!\n");
-        exit(1);
+    if (renderer->commandBuffers) {
+        vkFreeCommandBuffers(renderer->device, renderer->commandPool, renderer->swapchainImageCount, renderer->commandBuffers);
+        free(renderer->commandBuffers);
+        renderer->commandBuffers = NULL;
     }
-    renderer->commandBuffers = malloc(renderer->swapchainImageCount * sizeof(VkCommandBuffer));
+
+    renderer->commandBuffers = (VkCommandBuffer*) malloc(sizeof(VkCommandBuffer) * renderer->swapchainImageCount);
 
     VkCommandBufferAllocateInfo allocInfo = {0};
     allocInfo.sType = VK_STRUCTURE_TYPE_COMMAND_BUFFER_ALLOCATE_INFO;
@@ -398,71 +411,57 @@ void createCommandBuffers(VulkanRenderer* renderer) {
         exit(1);
     }
 
-    for (size_t i = 0; i < renderer->swapchainImageCount; i++) {
-        VkCommandBufferBeginInfo beginInfo = {0};
-        beginInfo.sType = VK_STRUCTURE_TYPE_COMMAND_BUFFER_BEGIN_INFO;
-        beginInfo.flags = VK_COMMAND_BUFFER_USAGE_SIMULTANEOUS_USE_BIT;
-
-        if (vkBeginCommandBuffer(renderer->commandBuffers[i], &beginInfo) != VK_SUCCESS) {
-            fprintf(stderr, "❌ Failed to begin recording command buffer!\n");
-            exit(1);
-        }
-
-        VkClearValue clearColor = {{{1.0f, 0.0f, 1.0f, 1.0f}}};  // ✅ Debug pink background
-        VkRenderPassBeginInfo renderPassInfo = {0};
-        renderPassInfo.sType = VK_STRUCTURE_TYPE_RENDER_PASS_BEGIN_INFO;
-        renderPassInfo.renderPass = renderer->renderPass;
-        renderPassInfo.framebuffer = renderer->swapchainFramebuffers[i];
-        renderPassInfo.renderArea.offset = (VkOffset2D){0, 0};
-        renderPassInfo.renderArea.extent = renderer->swapchainExtent;
-        renderPassInfo.clearValueCount = 1;
-        renderPassInfo.pClearValues = &clearColor;
-
-        vkCmdBeginRenderPass(renderer->commandBuffers[i], &renderPassInfo, VK_SUBPASS_CONTENTS_INLINE);
-
-        vkCmdBindPipeline(renderer->commandBuffers[i], VK_PIPELINE_BIND_POINT_GRAPHICS, renderer->graphicsPipeline);
-
-        vkCmdDraw(renderer->commandBuffers[i], 3, 1, 0, 0);  // ✅ Draw triangle
-
-        vkCmdEndRenderPass(renderer->commandBuffers[i]);
-
-        if (vkEndCommandBuffer(renderer->commandBuffers[i]) != VK_SUCCESS) {
-            fprintf(stderr, "❌ Failed to record command buffer!\n");
-            exit(1);
-        }
+    for (uint32_t i = 0; i < renderer->swapchainImageCount; i++) {
+        recordCommandBuffer(renderer, i);  // ✅ Call recordCommandBuffer for each image
     }
 }
 
-void recordCommandBuffer(VkCommandBuffer commandBuffer, uint32_t imageIndex, VulkanRenderer* renderer) {
+void recordCommandBuffer(VulkanRenderer* renderer, uint32_t imageIndex) {
+    VkCommandBuffer commandBuffer = renderer->commandBuffers[imageIndex];
+
+    // ✅ Explicitly reset command buffer before recording new commands
+    vkResetCommandBuffer(commandBuffer, 0);
+
     VkCommandBufferBeginInfo beginInfo = {0};
     beginInfo.sType = VK_STRUCTURE_TYPE_COMMAND_BUFFER_BEGIN_INFO;
-    beginInfo.flags = VK_COMMAND_BUFFER_USAGE_SIMULTANEOUS_USE_BIT;
+    beginInfo.flags = VK_COMMAND_BUFFER_USAGE_SIMULTANEOUS_USE_BIT;  // ✅ Allow reuse
 
     if (vkBeginCommandBuffer(commandBuffer, &beginInfo) != VK_SUCCESS) {
         fprintf(stderr, "❌ Failed to begin recording command buffer!\n");
         exit(1);
     }
 
-    VkClearValue clearColor = {{{0.1f, 0.1f, 0.1f, 1.0f}}};  // ✅ Dark gray background
+    VkClearValue clearColor = {{{0.0f, 0.0f, 0.0f, 1.0f}}};  // ✅ Background color (black)
+
     VkRenderPassBeginInfo renderPassInfo = {0};
     renderPassInfo.sType = VK_STRUCTURE_TYPE_RENDER_PASS_BEGIN_INFO;
-    renderPassInfo.renderPass = renderer->renderPass;
+    renderPassInfo.renderPass = renderer->renderPass;  // ✅ Use correct render pass
     renderPassInfo.framebuffer = renderer->swapchainFramebuffers[imageIndex];
     renderPassInfo.renderArea.offset = (VkOffset2D){0, 0};
     renderPassInfo.renderArea.extent = renderer->swapchainExtent;
     renderPassInfo.clearValueCount = 1;
     renderPassInfo.pClearValues = &clearColor;
 
-    // ✅ Begin the render pass
     vkCmdBeginRenderPass(commandBuffer, &renderPassInfo, VK_SUBPASS_CONTENTS_INLINE);
-
-    // ✅ Bind the pipeline (Ensures commands execute in the correct graphics state)
     vkCmdBindPipeline(commandBuffer, VK_PIPELINE_BIND_POINT_GRAPHICS, renderer->graphicsPipeline);
 
-    // ✅ Issue a draw call for 3 vertices (Triangle)
+    // ✅ Ensure viewport/scissor updates correctly
+    VkViewport viewport = {0};
+    viewport.x = 0.0f;
+    viewport.y = 0.0f;
+    viewport.width = (float)renderer->swapchainExtent.width;
+    viewport.height = (float)renderer->swapchainExtent.height;
+    viewport.minDepth = 0.0f;
+    viewport.maxDepth = 1.0f;
+    vkCmdSetViewport(commandBuffer, 0, 1, &viewport);
+
+    VkRect2D scissor = {0};
+    scissor.offset = (VkOffset2D){0, 0};
+    scissor.extent = renderer->swapchainExtent;
+    vkCmdSetScissor(commandBuffer, 0, 1, &scissor);
+
     vkCmdDraw(commandBuffer, 3, 1, 0, 0);
 
-    // ✅ End the render pass
     vkCmdEndRenderPass(commandBuffer);
 
     if (vkEndCommandBuffer(commandBuffer) != VK_SUCCESS) {
@@ -484,71 +483,73 @@ void createCommandPool(VulkanRenderer* renderer) {
 }
 
 void drawFrame(VulkanRenderer* renderer) {
-
-    // ✅ Handle window resize event first
-    // if (renderer->framebufferResized) {
-    //     vkDeviceWaitIdle(renderer->device);
-    //     recreateSwapchain(renderer);
-    //     return;  // ✅ Prevents rendering on an invalid swapchain
-    // }
+    if (!renderer) {
+        fprintf(stderr, "❌ Error: drawFrame called with NULL renderer\n");
+        return;
+    }
 
     uint32_t imageIndex;
     VkFence inFlightFence = renderer->inFlightFences[renderer->currentFrame];
 
-    // ✅ Wait for the previous frame to finish
+    // ✅ Wait for previous frame to complete before using resources
     vkWaitForFences(renderer->device, 1, &inFlightFence, VK_TRUE, UINT64_MAX);
-    vkResetFences(renderer->device, 1, &inFlightFence);  // ✅ Reset fence for next use
+    vkResetFences(renderer->device, 1, &inFlightFence);
 
     VkSemaphore imageAvailableSemaphore = renderer->imageAvailableSemaphores[renderer->currentFrame];
     VkSemaphore renderFinishedSemaphore = renderer->renderFinishedSemaphores[renderer->currentFrame];
 
+    // ✅ Acquire next swapchain image
     VkResult result = vkAcquireNextImageKHR(renderer->device, renderer->swapchain, UINT64_MAX,
                                             imageAvailableSemaphore, VK_NULL_HANDLE, &imageIndex);
 
-    if (result == VK_ERROR_OUT_OF_DATE_KHR || renderer->framebufferResized) {
-        recreateSwapchain(renderer);
+    if (result == VK_ERROR_OUT_OF_DATE_KHR) {
+        // ✅ NO NEED TO RECREATE SWAPCHAIN HERE
+        // `preFrame()` will handle it!
         return;
-    }else if (result != VK_SUCCESS && result != VK_SUBOPTIMAL_KHR) {
+    } else if (result != VK_SUCCESS && result != VK_SUBOPTIMAL_KHR) {
         fprintf(stderr, "❌ Failed to acquire swapchain image!\n");
         exit(1);
     }
 
+    // ✅ Reset & record command buffer before submitting
+    vkResetCommandBuffer(renderer->commandBuffers[imageIndex], 0);
+    recordCommandBuffer(renderer, imageIndex);
+
     VkSubmitInfo submitInfo = {0};
     submitInfo.sType = VK_STRUCTURE_TYPE_SUBMIT_INFO;
 
-    VkSemaphore waitSemaphores[] = {imageAvailableSemaphore};
     VkPipelineStageFlags waitStages[] = {VK_PIPELINE_STAGE_COLOR_ATTACHMENT_OUTPUT_BIT};
     submitInfo.waitSemaphoreCount = 1;
-    submitInfo.pWaitSemaphores = waitSemaphores;
+    submitInfo.pWaitSemaphores = &imageAvailableSemaphore;
     submitInfo.pWaitDstStageMask = waitStages;
-
     submitInfo.commandBufferCount = 1;
     submitInfo.pCommandBuffers = &renderer->commandBuffers[imageIndex];
-
-    VkSemaphore signalSemaphores[] = {renderFinishedSemaphore};
     submitInfo.signalSemaphoreCount = 1;
-    submitInfo.pSignalSemaphores = signalSemaphores;
+    submitInfo.pSignalSemaphores = &renderFinishedSemaphore;
 
     if (vkQueueSubmit(renderer->graphicsQueue, 1, &submitInfo, inFlightFence) != VK_SUCCESS) {
         fprintf(stderr, "❌ Failed to submit draw command buffer!\n");
         exit(1);
     }
 
+    // ✅ Present the frame
     VkPresentInfoKHR presentInfo = {0};
     presentInfo.sType = VK_STRUCTURE_TYPE_PRESENT_INFO_KHR;
     presentInfo.waitSemaphoreCount = 1;
-    presentInfo.pWaitSemaphores = signalSemaphores;
+    presentInfo.pWaitSemaphores = &renderFinishedSemaphore;
     presentInfo.swapchainCount = 1;
     presentInfo.pSwapchains = &renderer->swapchain;
     presentInfo.pImageIndices = &imageIndex;
 
     result = vkQueuePresentKHR(renderer->presentQueue, &presentInfo);
-    if (result != VK_SUCCESS) {
+    if (result == VK_ERROR_OUT_OF_DATE_KHR || result == VK_SUBOPTIMAL_KHR) {
+        renderer->resizePending = true;  // ✅ Set resize flag for `preFrame()`
+    } else if (result != VK_SUCCESS) {
         fprintf(stderr, "❌ Failed to present swapchain image!\n");
         exit(1);
     }
 
-    // ✅ Cycle to the next frame
+    // ✅ Advance to the next frame
     renderer->currentFrame = (renderer->currentFrame + 1) % MAX_FRAMES_IN_FLIGHT;
 }
 
@@ -712,6 +713,14 @@ bool createGraphicsPipeline(VulkanRenderer* renderer) {
     pipelineInfo.renderPass = renderer->renderPass;
     pipelineInfo.subpass = 0;
 
+    // Add dynamic state to the pipeline
+    VkDynamicState dynamicStates[] = {VK_DYNAMIC_STATE_VIEWPORT, VK_DYNAMIC_STATE_SCISSOR};
+    VkPipelineDynamicStateCreateInfo dynamicState = {0};
+    dynamicState.sType = VK_STRUCTURE_TYPE_PIPELINE_DYNAMIC_STATE_CREATE_INFO;
+    dynamicState.dynamicStateCount = 2;
+    dynamicState.pDynamicStates = dynamicStates;
+    pipelineInfo.pDynamicState = &dynamicState;
+
     VkResult result = vkCreateGraphicsPipelines(renderer->device, VK_NULL_HANDLE, 1, &pipelineInfo, NULL, &renderer->graphicsPipeline);
     if (result != VK_SUCCESS) {
         fprintf(stderr, "❌ Failed to create Vulkan graphics pipeline! Error Code: %d\n", result);
@@ -725,23 +734,30 @@ bool createGraphicsPipeline(VulkanRenderer* renderer) {
     return true;
 }
 
-void recreateSwapchain(VulkanRenderer* renderer) {
-    vkDeviceWaitIdle(renderer->device);  // ✅ Ensure GPU has finished work
+void recreateSwapchain(VulkanRenderer* vkRenderer) {
+    if (!vkRenderer) {
+        fprintf(stderr, "❌ Error: recreateSwapchain called with NULL VulkanRenderer\n");
+        return;
+    }
 
-    cleanupSwapchain(renderer);  // ✅ Destroy old swapchain safely
+    vkDeviceWaitIdle(vkRenderer->device);  // ✅ Ensure GPU is idle before resizing
 
-    createSwapchain(renderer);  // ✅ Recreate swapchain with new window size
-    createImageViews(renderer);
-    createFramebuffers(renderer);
+    // ✅ Ensure all in-flight frames finish
+    for (size_t i = 0; i < MAX_FRAMES_IN_FLIGHT; i++) {
+        vkWaitForFences(vkRenderer->device, 1, &vkRenderer->inFlightFences[i], VK_TRUE, UINT64_MAX);
+    }
 
-    // ✅ Reset command buffers to avoid referencing old framebuffers
-    vkFreeCommandBuffers(renderer->device, renderer->commandPool, renderer->swapchainImageCount, renderer->commandBuffers);
-    createCommandBuffers(renderer);
+    cleanupSwapchain(vkRenderer);  // ✅ Destroy old swapchain safely
 
-    renderer->framebufferResized = 0;  // ✅ Reset flag AFTER swapchain is ready
+    createSwapchain(vkRenderer);  // ✅ Recreate swapchain with new window size
+    createImageViews(vkRenderer);
+    createFramebuffers(vkRenderer);  // ✅ Allocate new framebuffers
+
+    // ✅ Allocate command buffers after recreating the swapchain
+    createCommandBuffers(vkRenderer);
+
+    vkRenderer->resizePending = false;  // ✅ Reset flag AFTER swapchain is ready
 }
-
-
 
 void createSyncObjects(VulkanRenderer* renderer) {
     VkSemaphoreCreateInfo semaphoreInfo = {0};
@@ -764,20 +780,43 @@ void createSyncObjects(VulkanRenderer* renderer) {
 }
 
 void cleanupSwapchain(VulkanRenderer* renderer) {
-    vkDeviceWaitIdle(renderer->device);  // ✅ Ensure all GPU work is done
+    vkDeviceWaitIdle(renderer->device);  // ✅ Ensure the GPU is finished before destroying anything.
 
-    // ✅ Free command buffers before destroying framebuffers
-    vkFreeCommandBuffers(renderer->device, renderer->commandPool, renderer->swapchainImageCount, renderer->commandBuffers);
-
-    for (uint32_t i = 0; i < renderer->swapchainImageCount; i++) {
-        vkDestroyFramebuffer(renderer->device, renderer->swapchainFramebuffers[i], NULL);
-        vkDestroyImageView(renderer->device, renderer->swapchainImageViews[i], NULL);
+    // ✅ Free command buffers safely
+    if (renderer->commandBuffers) {
+        vkFreeCommandBuffers(renderer->device, renderer->commandPool, renderer->swapchainImageCount, renderer->commandBuffers);
+        free(renderer->commandBuffers);
+        renderer->commandBuffers = NULL;  // ✅ Prevent double freeing
     }
 
-    vkDestroySwapchainKHR(renderer->device, renderer->swapchain, NULL);
+    // ✅ Destroy framebuffers safely
+    if (renderer->swapchainFramebuffers) {
+        for (uint32_t i = 0; i < renderer->swapchainImageCount; i++) {
+            if (renderer->swapchainFramebuffers[i] != VK_NULL_HANDLE) {
+                vkDestroyFramebuffer(renderer->device, renderer->swapchainFramebuffers[i], NULL);
+            }
+        }
+        free(renderer->swapchainFramebuffers);
+        renderer->swapchainFramebuffers = NULL;
+    }
+
+    // ✅ Destroy image views safely
+    if (renderer->swapchainImageViews) {
+        for (uint32_t i = 0; i < renderer->swapchainImageCount; i++) {
+            if (renderer->swapchainImageViews[i] != VK_NULL_HANDLE) {
+                vkDestroyImageView(renderer->device, renderer->swapchainImageViews[i], NULL);
+            }
+        }
+        free(renderer->swapchainImageViews);
+        renderer->swapchainImageViews = NULL;
+    }
+
+    // ✅ Destroy swapchain safely
+    if (renderer->swapchain) {
+        vkDestroySwapchainKHR(renderer->device, renderer->swapchain, NULL);
+        renderer->swapchain = VK_NULL_HANDLE;
+    }
 }
-
-
 
 void cleanupVulkan(VulkanRenderer* renderer) {
     vkDeviceWaitIdle(renderer->device);  // ✅ Ensure all GPU work is completed before cleanup
@@ -803,4 +842,89 @@ void cleanupVulkan(VulkanRenderer* renderer) {
     vkDestroyDevice(renderer->device, NULL);
     vkDestroySurfaceKHR(renderer->instance, renderer->surface, NULL);
     vkDestroyInstance(renderer->instance, NULL);
+}
+
+/* ------------------------------------- RENDERING API ------------------------------------- */
+
+static void initVulkan(Renderer* renderer, void* window) {
+    VulkanRenderer* vkRenderer = (VulkanRenderer*) renderer;
+    createVulkanInstance(vkRenderer);
+    createSurface(vkRenderer, window);
+    selectPhysicalDevice(vkRenderer);
+    createLogicalDevice(vkRenderer);
+    createSwapchain(vkRenderer);
+    createImageViews(vkRenderer);
+    createRenderPass(vkRenderer);
+    createGraphicsPipeline(vkRenderer);
+    createFramebuffers(vkRenderer);
+    createCommandPool(vkRenderer);
+    createCommandBuffers(vkRenderer);
+    createSyncObjects(vkRenderer);
+}
+
+static void shutdownVulkan(Renderer* renderer) {
+    VulkanRenderer* vkRenderer = (VulkanRenderer*) renderer;
+    cleanupVulkan(vkRenderer);
+}
+
+static void resizeVulkan(Renderer* renderer, int width, int height) {
+    VulkanRenderer* vkRenderer = (VulkanRenderer*) renderer;
+    if (!vkRenderer) {
+        fprintf(stderr, "❌ Error: resizeVulkan called with NULL VulkanRenderer\n");
+        return;
+    }
+    // ✅ Ensure resize is only set **once** per resize event
+    if (!vkRenderer->resizePending) {
+        vkRenderer->resizePending = true;
+        fprintf(stdout, "🔄 Resizing to %dx%d\n", width, height);
+    }
+}
+
+static void beginFrameVulkan(Renderer* renderer) {
+    VulkanRenderer* vkRenderer = (VulkanRenderer*) renderer;
+    if (!vkRenderer) {
+        fprintf(stderr, "❌ Error: drawFrame called with NULL VulkanRenderer\n");
+        return;
+    }
+    drawFrame(vkRenderer);
+}
+
+static void endFrameVulkan(Renderer* renderer) {
+    // Nothing for now
+}
+
+static void vulkanPreFrame(Renderer* renderer) {
+    VulkanRenderer* vkRenderer = (VulkanRenderer*) renderer;
+    if (!vkRenderer) {
+        fprintf(stderr, "❌ Error: drawFrame called with NULL VulkanRenderer\n");
+        return;
+    }
+
+    // Handle resizing
+    if (vkRenderer->resizePending && inputState.mouseReleased) {
+        int width, height;
+        glfwGetFramebufferSize(vkRenderer->window, &width, &height);
+
+        if (width > 0 && height > 0) {
+            printf("🛠 Resizing Vulkan renderer to: %dx%d\n", width, height);
+            vkDeviceWaitIdle(vkRenderer->device);  // ✅ Wait for GPU to finish
+            recreateSwapchain(vkRenderer);
+            vkRenderer->resizePending = false;
+        }
+        // Not sure we want to do this?
+        inputState.mouseReleased = false;  // ✅ Reset mouse release state
+    }
+}
+
+Renderer* createVulkanRenderer(void* window) {
+    VulkanRenderer* vkRenderer = (VulkanRenderer*) malloc(sizeof(VulkanRenderer));
+    vkRenderer->base.init = initVulkan;
+    vkRenderer->base.shutdown = shutdownVulkan;
+    vkRenderer->base.resize = resizeVulkan;
+    vkRenderer->base.preFrame = vulkanPreFrame;
+    vkRenderer->base.beginFrame = beginFrameVulkan;
+    vkRenderer->base.endFrame = endFrameVulkan;
+    vkRenderer->window = (GLFWwindow*) window;
+    vkRenderer->resizePending = false;
+    return (Renderer*) vkRenderer;
 }

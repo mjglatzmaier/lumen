@@ -1,5 +1,8 @@
 {
     "files.associations": {
-        "platform.h": "c"
+        "platform.h": "c",
+        "renderer.h": "c",
+        "input.h": "c",
+        "vulkan_renderer.h": "c"
     }
 }

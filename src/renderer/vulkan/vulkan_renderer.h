@@ -4,11 +4,13 @@
 #include <vulkan/vulkan.h>
 #include <GLFW/glfw3.h>
 #include <stdbool.h>
+#include "../renderer.h"
 
 #define MAX_FRAMES_IN_FLIGHT 2  // ✅ Double-buffering to prevent synchronization issues
 
 
 typedef struct VulkanRenderer {
+    Renderer base;  // ✅ Simulate "inheritance" by embedding Renderer
     GLFWwindow* window;
     VkInstance instance;
     VkPhysicalDevice physicalDevice;
@@ -34,7 +36,7 @@ typedef struct VulkanRenderer {
     uint32_t graphicsQueueFamilyIndex;
     uint32_t presentQueueFamilyIndex;
     uint32_t currentFrame;
-    bool framebufferResized;
+    bool resizePending;
 } VulkanRenderer;
 
 // ✅ Function declarations
@@ -49,7 +51,7 @@ bool createGraphicsPipeline(VulkanRenderer* renderer);
 void createFramebuffers(VulkanRenderer* renderer);
 void createCommandPool(VulkanRenderer* renderer);
 void createCommandBuffers(VulkanRenderer* renderer);
-void recordCommandBuffer(VkCommandBuffer commandBuffer, uint32_t imageIndex, VulkanRenderer* renderer);
+void recordCommandBuffer(VulkanRenderer* renderer, uint32_t imageIndex);
 void drawFrame(VulkanRenderer* renderer);
 void reateSyncObjects(VulkanRenderer* renderer);
 void cleanupSwapchain(VulkanRenderer* renderer);
