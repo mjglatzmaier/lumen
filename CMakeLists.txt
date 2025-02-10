@@ -3,7 +3,48 @@ project(Lumen C)
 
 set(CMAKE_C_STANDARD 11)
 set(CMAKE_C_EXTENSIONS ON)
-set(CMAKE_CXX_COMPILER "") # Ensures C++ is not used
+
+# Detect build type (defaults to Debug if not specified)
+if(NOT CMAKE_BUILD_TYPE)
+    set(CMAKE_BUILD_TYPE Debug CACHE STRING "Build type" FORCE)
+endif()
+
+# Enable additional optimizations in Release mode
+message(STATUS "Configuring build type: ${CMAKE_BUILD_TYPE}")
+
+# Configuration-specific compiler options
+if(CMAKE_BUILD_TYPE STREQUAL "Debug")
+    message(STATUS "Applying Debug compilation flags")
+    set(CMAKE_C_FLAGS "${CMAKE_C_FLAGS} -Og -g -Wall -Wextra -DDEBUG")
+elseif(CMAKE_BUILD_TYPE STREQUAL "Release")
+    message(STATUS "Applying Release compilation flags")
+    set(CMAKE_C_FLAGS "${CMAKE_C_FLAGS} -O3 -march=native -DNDEBUG")
+elseif(CMAKE_BUILD_TYPE STREQUAL "RelWithDebInfo")
+    message(STATUS "Applying RelWithDebInfo compilation flags")
+    set(CMAKE_C_FLAGS "${CMAKE_C_FLAGS} -O2 -g -march=native -DNDEBUG")
+elseif(CMAKE_BUILD_TYPE STREQUAL "MinSizeRel")
+    message(STATUS "Applying MinSizeRel compilation flags")
+    set(CMAKE_C_FLAGS "${CMAKE_C_FLAGS} -Os -DNDEBUG")
+endif()
+
+# Check for SIMD support flag
+option(USE_SIMD "Enable SIMD optimizations" OFF)
+
+if(USE_SIMD)
+    message(STATUS "Enabling SIMD optimizations")
+    set(CMAKE_C_FLAGS "${CMAKE_C_FLAGS} -msse4.1 -mfma -mavx2 -DUSE_SIMD")
+endif()
+
+
+# Ensure a valid C++ compiler exists (needed for mimalloc)
+if(NOT CMAKE_CXX_COMPILER)
+    find_program(CMAKE_CXX_COMPILER NAMES clang++ g++ c++ REQUIRED)
+endif()
+
+# Set compiler flags (globally)
+if(USE_SIMD)
+    set(CMAKE_C_FLAGS "${CMAKE_C_FLAGS} -msse4.1 -march=native")
+endif()
 
 # Add the Vulkan library
 find_package(Vulkan REQUIRED)
@@ -15,11 +56,43 @@ add_executable(Lumen
     #src/core/platform.c
     #src/core/logger.c
     #src/renderer/renderer.c
+    src/input/input.c
     src/renderer/vulkan/vulkan_renderer.c
 )
 
-# Include directories
-target_include_directories(Lumen PRIVATE src inc)
+# Add the core module
+add_subdirectory(src/core)
 
-# Link Vulkan
-target_link_libraries(Lumen PRIVATE Vulkan::Vulkan glfw)
+# Ensure mimalloc is built as a static library in C mode
+set(MI_BUILD_TESTS OFF CACHE BOOL "Disable mimalloc tests")
+set(MI_BUILD_SHARED OFF CACHE BOOL "Build mimalloc as a static library")
+set(MI_BUILD_STATIC ON CACHE BOOL "Ensure mimalloc is built as a static library")
+set(MI_OVERRIDE OFF CACHE BOOL "Disable C++ new/delete overrides")
+
+# Add mimalloc from submodules
+add_subdirectory(submodules/mimalloc)
+
+# Header only third party libs
+include_directories(submodules/FastNoiseLite/C)
+include_directories(submodules/simde)
+
+# Link
+target_link_libraries(Lumen PRIVATE Vulkan::Vulkan glfw LumenCore mimalloc-static)
+
+# Include directories
+target_include_directories(Lumen PRIVATE
+    src
+    inc
+    submodules/fastnoiselite
+    submodules/imgui
+    submodules/mimalloc/include
+)
+
+# Create unit test executable
+# Include µnit (test framework)
+set(MUNIT_DIR ${CMAKE_SOURCE_DIR}/submodules/munit)
+include_directories(${MUNIT_DIR})
+add_executable(LumenTests tests/math_tests.c ${MUNIT_DIR}/munit.c)
+
+# Link core math library
+target_link_libraries(LumenTests PRIVATE LumenCore)

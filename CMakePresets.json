@@ -16,7 +16,22 @@
           "CMAKE_CXX_COMPILER": "clang++",
           "CMAKE_TOOLCHAIN_FILE": "${sourceDir}/../mcl/vcpkg/scripts/buildsystems/vcpkg.cmake",
           "CMAKE_BUILD_TYPE": "Debug",
-          "CMAKE_EXPORT_COMPILE_COMMANDS": "YES"
+          "CMAKE_EXPORT_COMPILE_COMMANDS": "YES",
+          "USE_SIMD": "ON"
+        }
+      },
+      {
+        "name": "release",
+        "description": "Default configuration with vcpkg",
+        "generator": "Ninja",
+        "binaryDir": "${sourceDir}/build",
+        "cacheVariables": {
+          "CMAKE_C_COMPILER": "clang",
+          "CMAKE_CXX_COMPILER": "clang++",
+          "CMAKE_TOOLCHAIN_FILE": "${sourceDir}/../mcl/vcpkg/scripts/buildsystems/vcpkg.cmake",
+          "CMAKE_BUILD_TYPE": "Release",
+          "CMAKE_EXPORT_COMPILE_COMMANDS": "YES",
+          "USE_SIMD": "Off"
         }
       }
     ],
@@ -24,6 +39,10 @@
       {
         "name": "default",
         "configurePreset": "default"
+      },
+      {
+        "name": "release",
+        "configurePreset": "release"
       }
     ]
   }

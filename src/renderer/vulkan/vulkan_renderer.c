@@ -1,5 +1,5 @@
 #include "vulkan_renderer.h"
-#include "../../input/input.c"
+#include "../../input/input.h"
 #include "../../core/platform.h"
 #include <stdio.h>
 #include <stdlib.h>
