@@ -17,7 +17,7 @@
           "CMAKE_TOOLCHAIN_FILE": "${sourceDir}/../mcl/vcpkg/scripts/buildsystems/vcpkg.cmake",
           "CMAKE_BUILD_TYPE": "Debug",
           "CMAKE_EXPORT_COMPILE_COMMANDS": "YES",
-          "USE_SIMD": "ON"
+          "USE_SIMD": "OFF"
         }
       },
       {
@@ -31,7 +31,7 @@
           "CMAKE_TOOLCHAIN_FILE": "${sourceDir}/../mcl/vcpkg/scripts/buildsystems/vcpkg.cmake",
           "CMAKE_BUILD_TYPE": "Release",
           "CMAKE_EXPORT_COMPILE_COMMANDS": "YES",
-          "USE_SIMD": "Off"
+          "USE_SIMD": "OFF"
         }
       }
     ],

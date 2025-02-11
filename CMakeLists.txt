@@ -15,7 +15,7 @@ message(STATUS "Configuring build type: ${CMAKE_BUILD_TYPE}")
 # Configuration-specific compiler options
 if(CMAKE_BUILD_TYPE STREQUAL "Debug")
     message(STATUS "Applying Debug compilation flags")
-    set(CMAKE_C_FLAGS "${CMAKE_C_FLAGS} -Og -g -Wall -Wextra -DDEBUG")
+    set(CMAKE_C_FLAGS "${CMAKE_C_FLAGS} -O0 -g -Wall -Wextra -DDEBUG")
 elseif(CMAKE_BUILD_TYPE STREQUAL "Release")
     message(STATUS "Applying Release compilation flags")
     set(CMAKE_C_FLAGS "${CMAKE_C_FLAGS} -O3 -march=native -DNDEBUG")
@@ -89,10 +89,9 @@ target_include_directories(Lumen PRIVATE
 )
 
 # Create unit test executable
-# Include µnit (test framework)
-set(MUNIT_DIR ${CMAKE_SOURCE_DIR}/submodules/munit)
-include_directories(${MUNIT_DIR})
-add_executable(LumenTests tests/math_tests.c ${MUNIT_DIR}/munit.c)
+add_executable(LumenTests
+    tests/runner.c
+    tests/math_mat_tests.c
+    tests/math_vec_tests.c)
 
-# Link core math library
 target_link_libraries(LumenTests PRIVATE LumenCore)

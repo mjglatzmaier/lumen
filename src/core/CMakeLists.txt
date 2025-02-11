@@ -5,8 +5,11 @@ option(USE_SIMD "Enable SIMD optimizations" ON)
 
 # Define Source Files
 set(LUM_CORE_SRC
-    math/math_vec.c
-    math/math_mat.c
+    math/math_vec3.c
+    math/math_vec4.c
+    math/math_mat3.c
+    math/math_mat4.c
+    math/math_fast.c
 )
 
 # Create the LumenCore Library

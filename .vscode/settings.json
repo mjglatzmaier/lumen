@@ -5,6 +5,15 @@
         "input.h": "c",
         "vulkan_renderer.h": "c",
         "sse.h": "c",
-        "math_mat.h": "c"
+        "math_mat.h": "c",
+        "__locale": "c",
+        "chrono": "c",
+        "functional": "c",
+        "string.h": "c",
+        "math_mat4.h": "c",
+        "ios": "c",
+        "format": "c",
+        "math_vec4.h": "c",
+        "math_vec3.h": "c"
     }
 }
