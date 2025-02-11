@@ -69,7 +69,6 @@ add_subdirectory(submodules/mimalloc)
 
 # Header only third party libs
 include_directories(submodules/FastNoiseLite/C)
-include_directories(submodules/simde)
 
 # Link
 target_link_libraries(Lumen PRIVATE Vulkan::Vulkan glfw LumenCore mimalloc-static)

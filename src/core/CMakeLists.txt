@@ -19,7 +19,6 @@ add_library(LumenCore STATIC ${LUM_CORE_SRC})
 target_include_directories(LumenCore PUBLIC
     ${CMAKE_CURRENT_SOURCE_DIR}
     ${CMAKE_CURRENT_SOURCE_DIR}/math
-    ${CMAKE_CURRENT_SOURCE_DIR}/../../submodules/simde
 )
 
 # Compiler Flags for SIMD
