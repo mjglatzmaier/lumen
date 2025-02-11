@@ -112,7 +112,7 @@ void lum_mat4_sub(lum_mat4* out, const lum_mat4* A, const lum_mat4* B) {
 }
 
 // Matrix Multiplication (Fully Unrolled)
-void lum_mat4_mul(lum_mat4* out, const lum_mat4* a, const lum_mat4* b) {
+void lum_mat4_mul(lum_mat4* restrict  out, const lum_mat4* restrict  a, const lum_mat4* restrict  b) {
     #ifdef USE_SIMD
     __m128 row1 = _mm_load_ps(&b->m[0]);   // Load B row 1
     __m128 row2 = _mm_load_ps(&b->m[4]);   // Load B row 2
@@ -157,7 +157,7 @@ void lum_mat4_mul(lum_mat4* out, const lum_mat4* a, const lum_mat4* b) {
 }
 
 // Matrix-Vector Multiplication (Fully Unrolled)
-void lum_mat4_mul_vec4(lum_vec4* out, const lum_mat4* m, const lum_vec4* v) {
+void lum_mat4_mul_vec4(lum_vec4* restrict  out, const lum_mat4* restrict  m, const lum_vec4* restrict  v) {
     #ifdef USE_SIMD
     __m128 vec = _mm_load_ps(&v->x);  // Load vec4 (x, y, z, w)
 

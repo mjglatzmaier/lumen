@@ -20,8 +20,8 @@ void lum_mat4_transpose(lum_mat4* out, const lum_mat4* m);
 void lum_mat4_scale(lum_mat4* out, const lum_mat4* m, float scalar);
 void lum_mat4_add(lum_mat4* out, const lum_mat4* A, const lum_mat4* B);
 void lum_mat4_sub(lum_mat4* out, const lum_mat4* A, const lum_mat4* B);
-void lum_mat4_mul(lum_mat4* out, const lum_mat4* A, const lum_mat4* B);
-void lum_mat4_mul_vec4(lum_vec4* out, const lum_mat4* m, const lum_vec4* v);
+void lum_mat4_mul(lum_mat4* restrict out, const lum_mat4* restrict  A, const lum_mat4* restrict  B);
+void lum_mat4_mul_vec4(lum_vec4* restrict  out, const lum_mat4* restrict  m, const lum_vec4* restrict v);
 
 // Row/Column Access
 lum_vec4 lum_mat4_get_row(const lum_mat4* m, int i);
