@@ -15,7 +15,7 @@ message(STATUS "Configuring build type: ${CMAKE_BUILD_TYPE}")
 # Configuration-specific compiler options
 if(CMAKE_BUILD_TYPE STREQUAL "Debug")
     message(STATUS "Applying Debug compilation flags")
-    set(CMAKE_C_FLAGS "${CMAKE_C_FLAGS} -O0 -g -Wall -Wextra -DDEBUG")
+    set(CMAKE_C_FLAGS "${CMAKE_C_FLAGS} -Og -g -Wall -Wextra -Wpedantic -DDEBUG")
 elseif(CMAKE_BUILD_TYPE STREQUAL "Release")
     message(STATUS "Applying Release compilation flags")
     set(CMAKE_C_FLAGS "${CMAKE_C_FLAGS} -O3 -march=native -DNDEBUG")
@@ -39,11 +39,6 @@ endif()
 # Ensure a valid C++ compiler exists (needed for mimalloc)
 if(NOT CMAKE_CXX_COMPILER)
     find_program(CMAKE_CXX_COMPILER NAMES clang++ g++ c++ REQUIRED)
-endif()
-
-# Set compiler flags (globally)
-if(USE_SIMD)
-    set(CMAKE_C_FLAGS "${CMAKE_C_FLAGS} -msse4.1 -march=native")
 endif()
 
 # Add the Vulkan library

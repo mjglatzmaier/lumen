@@ -3,8 +3,7 @@
 #include <string.h>
 
 #ifdef USE_SIMD
-    #include <simde/x86/sse.h>
-    #include <simde/x86/avx.h>
+    #include <immintrin.h> // SSE + FMA
 #endif
 
 // Identity Matrix
@@ -19,6 +18,22 @@ void lum_mat4_identity(lum_mat4* out) {
 
 // Transpose Matrix
 void lum_mat4_transpose(lum_mat4* out, const lum_mat4* m) {
+    #ifdef USE_SIMD
+    // Load matrix rows into SIMD registers
+    __m128 row0 = _mm_load_ps(&m->m[0]);   // Load row 0
+    __m128 row1 = _mm_load_ps(&m->m[4]);   // Load row 1
+    __m128 row2 = _mm_load_ps(&m->m[8]);   // Load row 2
+    __m128 row3 = _mm_load_ps(&m->m[12]);  // Load row 3
+
+    // Transpose using SSE intrinsic
+    _MM_TRANSPOSE4_PS(row0, row1, row2, row3);
+
+    // Store transposed rows back
+    _mm_store_ps(&out->m[0], row0);
+    _mm_store_ps(&out->m[4], row1);
+    _mm_store_ps(&out->m[8], row2);
+    _mm_store_ps(&out->m[12], row3);
+    #else
     lum_mat4 result = {
         m->m[0], m->m[4], m->m[8],  m->m[12],
         m->m[1], m->m[5], m->m[9],  m->m[13],
@@ -26,10 +41,18 @@ void lum_mat4_transpose(lum_mat4* out, const lum_mat4* m) {
         m->m[3], m->m[7], m->m[11], m->m[15]
     };
     *out = result;
+    #endif
 }
 
 // Matrix Scaling (Fully Unrolled)
 void lum_mat4_scale(lum_mat4* out, const lum_mat4* m, float scalar) {
+    #ifdef USE_SIMD
+    __m128 scale = _mm_set1_ps(scalar);
+    _mm_store_ps(out->m + 0, _mm_mul_ps(_mm_load_ps(m->m + 0), scale));
+    _mm_store_ps(out->m + 4, _mm_mul_ps(_mm_load_ps(m->m + 4), scale));
+    _mm_store_ps(out->m + 8, _mm_mul_ps(_mm_load_ps(m->m + 8), scale));
+    _mm_store_ps(out->m + 12, _mm_mul_ps(_mm_load_ps(m->m + 12), scale));
+    #else
     out->m[0]  = m->m[0]  * scalar;  out->m[1]  = m->m[1]  * scalar;
     out->m[2]  = m->m[2]  * scalar;  out->m[3]  = m->m[3]  * scalar;
 
@@ -41,10 +64,17 @@ void lum_mat4_scale(lum_mat4* out, const lum_mat4* m, float scalar) {
 
     out->m[12] = m->m[12] * scalar;  out->m[13] = m->m[13] * scalar;
     out->m[14] = m->m[14] * scalar;  out->m[15] = m->m[15] * scalar;
+    #endif
 }
 
 // Matrix Addition (Fully Unrolled)
 void lum_mat4_add(lum_mat4* out, const lum_mat4* A, const lum_mat4* B) {
+    #ifdef USE_SIMD
+    _mm_store_ps(&out->m[0], _mm_add_ps(_mm_load_ps(&A->m[0]), _mm_load_ps(&B->m[0])));
+    _mm_store_ps(&out->m[4], _mm_add_ps(_mm_load_ps(&A->m[4]), _mm_load_ps(&B->m[4])));
+    _mm_store_ps(&out->m[8], _mm_add_ps(_mm_load_ps(&A->m[8]), _mm_load_ps(&B->m[8])));
+    _mm_store_ps(&out->m[12], _mm_add_ps(_mm_load_ps(&A->m[12]), _mm_load_ps(&B->m[12])));
+    #else
     out->m[0]  = A->m[0]  + B->m[0];   out->m[1]  = A->m[1]  + B->m[1];
     out->m[2]  = A->m[2]  + B->m[2];   out->m[3]  = A->m[3]  + B->m[3];
     
@@ -56,10 +86,17 @@ void lum_mat4_add(lum_mat4* out, const lum_mat4* A, const lum_mat4* B) {
 
     out->m[12] = A->m[12] + B->m[12];  out->m[13] = A->m[13] + B->m[13];
     out->m[14] = A->m[14] + B->m[14];  out->m[15] = A->m[15] + B->m[15];
+    #endif
 }
 
 // Matrix Subtraction (Fully Unrolled)
 void lum_mat4_sub(lum_mat4* out, const lum_mat4* A, const lum_mat4* B) {
+    #ifdef USE_SIMD
+    _mm_store_ps(&out->m[0], _mm_sub_ps(_mm_load_ps(&A->m[0]), _mm_load_ps(&B->m[0])));
+    _mm_store_ps(&out->m[4], _mm_sub_ps(_mm_load_ps(&A->m[4]), _mm_load_ps(&B->m[4])));
+    _mm_store_ps(&out->m[8], _mm_sub_ps(_mm_load_ps(&A->m[8]), _mm_load_ps(&B->m[8])));
+    _mm_store_ps(&out->m[12], _mm_sub_ps(_mm_load_ps(&A->m[12]), _mm_load_ps(&B->m[12])));
+    #else
     out->m[0]  = A->m[0]  - B->m[0];   out->m[1]  = A->m[1]  - B->m[1];
     out->m[2]  = A->m[2]  - B->m[2];   out->m[3]  = A->m[3]  - B->m[3];
     
@@ -71,23 +108,29 @@ void lum_mat4_sub(lum_mat4* out, const lum_mat4* A, const lum_mat4* B) {
 
     out->m[12] = A->m[12] - B->m[12];  out->m[13] = A->m[13] - B->m[13];
     out->m[14] = A->m[14] - B->m[14];  out->m[15] = A->m[15] - B->m[15];
+    #endif
 }
 
 // Matrix Multiplication (Fully Unrolled)
 void lum_mat4_mul(lum_mat4* out, const lum_mat4* a, const lum_mat4* b) {
     #ifdef USE_SIMD
-    // SIMD Optimized Matrix Multiplication
+    __m128 row1 = _mm_load_ps(&b->m[0]);   // Load B row 1
+    __m128 row2 = _mm_load_ps(&b->m[4]);   // Load B row 2
+    __m128 row3 = _mm_load_ps(&b->m[8]);   // Load B row 3
+    __m128 row4 = _mm_load_ps(&b->m[12]);  // Load B row 4
+
     for (int i = 0; i < 4; i++) {
-        simde__m128 row = simde_mm_load_ps(&a->m[i * 4]);
-        
-        for (int j = 0; j < 4; j++) {
-            simde__m128 col = simde_mm_set_ps(
-                b->m[3 * 4 + j], b->m[2 * 4 + j], 
-                b->m[1 * 4 + j], b->m[0 * 4 + j]
-            );
-            simde__m128 mul = simde_mm_mul_ps(row, col);
-            out->m[i * 4 + j] = simde_mm_cvtss_f32(simde_mm_hadd_ps(mul, mul));
-        }
+        __m128 brod1 = _mm_set1_ps(a->m[i * 4 + 0]);  // Broadcast a[i][0]
+        __m128 brod2 = _mm_set1_ps(a->m[i * 4 + 1]);  // Broadcast a[i][1]
+        __m128 brod3 = _mm_set1_ps(a->m[i * 4 + 2]);  // Broadcast a[i][2]
+        __m128 brod4 = _mm_set1_ps(a->m[i * 4 + 3]);  // Broadcast a[i][3]
+
+        __m128 row = _mm_fmadd_ps(brod1, row1,  // a[i][0] * b[0]
+                     _mm_fmadd_ps(brod2, row2,  // + a[i][1] * b[1]
+                     _mm_fmadd_ps(brod3, row3,  // + a[i][2] * b[2]
+                    _mm_mul_ps(brod4, row4))));  // + a[i][3] * b[3]
+
+        _mm_store_ps(&out->m[i * 4], row);  // Store the computed row
     }
     #else
     // Scalar Unrolled Multiplication (Faster in Debug Mode)
@@ -113,13 +156,31 @@ void lum_mat4_mul(lum_mat4* out, const lum_mat4* a, const lum_mat4* b) {
     #endif
 }
 
-
 // Matrix-Vector Multiplication (Fully Unrolled)
 void lum_mat4_mul_vec4(lum_vec4* out, const lum_mat4* m, const lum_vec4* v) {
+    #ifdef USE_SIMD
+    __m128 vec = _mm_load_ps(&v->x);  // Load vec4 (x, y, z, w)
+
+    // Load matrix rows
+    __m128 row1 = _mm_load_ps(&m->m[0]);   // Row 1
+    __m128 row2 = _mm_load_ps(&m->m[4]);   // Row 2
+    __m128 row3 = _mm_load_ps(&m->m[8]);   // Row 3
+    __m128 row4 = _mm_load_ps(&m->m[12]);  // Row 4
+
+    // Compute matrix-vector multiplication in a single fused multiply-add chain
+    __m128 result = _mm_fmadd_ps(row1, _mm_set1_ps(v->x),  // m[0] * v.x
+                     _mm_fmadd_ps(row2, _mm_set1_ps(v->y),  // + m[1] * v.y
+                     _mm_fmadd_ps(row3, _mm_set1_ps(v->z),  // + m[2] * v.z
+                                  _mm_mul_ps(row4, _mm_set1_ps(v->w))))); // + m[3] * v.w
+
+    // Store the result
+    _mm_store_ps(&out->x, result);
+    #else
     out->x = m->m[0] * v->x + m->m[1] * v->y + m->m[2] * v->z + m->m[3] * v->w;
     out->y = m->m[4] * v->x + m->m[5] * v->y + m->m[6] * v->z + m->m[7] * v->w;
     out->z = m->m[8] * v->x + m->m[9] * v->y + m->m[10] * v->z + m->m[11] * v->w;
     out->w = m->m[12] * v->x + m->m[13] * v->y + m->m[14] * v->z + m->m[15] * v->w;
+    #endif
 }
 
 // Get Row i

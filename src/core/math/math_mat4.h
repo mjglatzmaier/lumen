@@ -7,8 +7,12 @@
 
 // 4x4 Matrix (Row-Major)
 typedef struct {
+    #ifdef USE_SIMD
+    float m[16] __attribute__((aligned(16))); // msvc __declspec(align(16))
+    #else
     float m[16];
-}  lum_mat4;
+    #endif
+} lum_mat4;
 
 // Basic Operations
 void lum_mat4_identity(lum_mat4* out);

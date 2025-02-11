@@ -5,7 +5,7 @@
 
 typedef struct {
     float x, y, z, w;
-} lum_vec4;
+} __attribute__((aligned(16))) lum_vec4; // use alignas(16) c11?
 
 // Adds two vectors
 lum_vec4 lum_vec4_add(lum_vec4 a, lum_vec4 b);
