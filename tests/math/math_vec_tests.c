@@ -1,5 +1,5 @@
 #include "math_vec3.h"
-#include "test_framework.h"
+#include "../test_framework.h"
 #include <math.h>
 
 // **Vec3 Addition**

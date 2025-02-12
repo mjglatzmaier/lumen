@@ -1,5 +1,5 @@
 #include "math_mat4.h"
-#include "test_framework.h"
+#include "../test_framework.h"
 
 // Number of iterations for benchmarking
 #define BENCH_ITERATIONS 1000000
