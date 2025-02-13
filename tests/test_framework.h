@@ -23,6 +23,26 @@ typedef struct {
         return false; \
     }
 
+#define ASSERT_NOT_NULL(ptr)                                               \
+    do                                                                     \
+    {                                                                      \
+        if ((ptr) == NULL)                                                 \
+        {                                                                  \
+            printf("❌ Assertion failed: %s (Line %d)\n", #ptr, __LINE__); \
+            return false;                                                  \
+        }                                                                  \
+    } while (0)
+
+#define ASSERT_NULL(ptr)                                                   \
+    do                                                                     \
+    {                                                                      \
+        if ((ptr) != NULL)                                                 \
+        {                                                                  \
+            printf("❌ Assertion failed: %s (Line %d)\n", #ptr, __LINE__); \
+            return false;                                                  \
+        }                                                                  \
+    } while (0)
+
 #define ASSERT_FLOAT_EQ(a, b, epsilon) \
     if (fabs((a) - (b)) > epsilon) { \
         printf("❌ Assertion failed: %f != %f (Line %d)\n", (a), (b), __LINE__); \
@@ -40,9 +60,6 @@ typedef struct {
 
 // **Test Registration**
 #define DECLARE_TEST(test_name) { #test_name, test_name }
-
-
-
 
 // **Helper Function for Time Measurement**
 static inline double get_wall_time() {

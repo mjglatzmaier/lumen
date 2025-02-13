@@ -9,6 +9,10 @@ typedef struct lum_allocator {
     void* (*realloc)(struct lum_allocator* self, void* ptr, size_t new_size);
     void  (*reset)(struct lum_allocator* self);  // Optional (for arenas)
     void* user_data;  // For storing allocator-specific state
+    
+    // **New GPU allocation functions** (for Vulkan, DX12, CUDA)
+    void* (*gpu_alloc)(struct lum_allocator* self, size_t size);
+    void  (*gpu_free)(struct lum_allocator* self, void* ptr);
 } lum_allocator;
 
 // Default allocator (uses malloc/free)

@@ -78,7 +78,7 @@ target_link_libraries(Lumen PRIVATE Vulkan::Vulkan glfw LumenCore)
 target_include_directories(Lumen PRIVATE
     src
     inc
-    #submodules/fastnoiselite
+    submodules/stb
     #submodules/imgui
     #submodules/FastNoiseLite/C
 )
@@ -94,6 +94,17 @@ add_executable(LumenTests
     tests/math/math_mat_tests.c
     tests/math/math_vec_tests.c
     tests/memory/test_alloc_benchmark.c
-    tests/memory/test_alloc_general.c)
+    tests/memory/test_alloc_general.c
+    tests/memory/test_alloc_frame.c
+    tests/memory/test_alloc_stack.c
+    tests/containers/test_cont_da.c)
 
 target_link_libraries(LumenTests PRIVATE LumenCore)
+
+target_include_directories(LumenTests PRIVATE
+    src
+    inc
+    submodules/stb
+    #submodules/imgui
+    #submodules/FastNoiseLite/C
+)

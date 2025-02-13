@@ -10,6 +10,10 @@ set(LUM_CORE_SRC
     math/math_fast.c
     # MEMORY
     memory/allocators/mem_general.c
+    memory/allocators/mem_frame.c
+    memory/allocators/mem_stack.c
+    #CONTAINERS
+    #containers/cont_da.c
 )
 
 # Create the LumenCore Library

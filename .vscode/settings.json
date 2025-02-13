@@ -14,6 +14,14 @@
         "ios": "c",
         "format": "c",
         "math_vec4.h": "c",
-        "math_vec3.h": "c"
+        "math_vec3.h": "c",
+        "math_bits.h": "c",
+        "random": "cpp",
+        "charconv": "c",
+        "test_framework.h": "c",
+        "__bit_reference": "c",
+        "__split_buffer": "c",
+        "string": "c",
+        "vector": "c"
     }
 }
