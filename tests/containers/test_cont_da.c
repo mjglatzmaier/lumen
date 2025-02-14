@@ -8,8 +8,8 @@
 // Test dynamic array functionality
 bool test_da_default_alloc() {
     // Instantiate an alloc
-    lum_allocator* allocator = (lum_allocator*)lum_get_default_allocator();
-    int* array = NULL;
+    lum_allocator* allocator = (lum_allocator*)lum_create_default_allocator();
+    int* array = cont_da_create(int, 0, allocator);
 
     // Check empty state
     assert(cont_da_size(array) == 0);
@@ -38,7 +38,8 @@ bool test_da_default_alloc() {
 
 // Test large allocations
 bool test_da_large_alloc() {
-    int* array = NULL;
+    lum_allocator* allocator = (lum_allocator*)lum_create_default_allocator();
+    int* array = cont_da_create(int, 0, allocator);
     const int N = 1000000;
 
     for (int i = 0; i < N; i++) {
@@ -53,7 +54,8 @@ bool test_da_large_alloc() {
 
 // Test clearing an array
 bool test_lum_da_clear() {
-    int* array = NULL;
+    lum_allocator* allocator = (lum_allocator*)lum_create_default_allocator();
+    int* array = cont_da_create(int, 0, allocator);
     int val = 42;
 
     for (int i = 0; i < 100; i++) {

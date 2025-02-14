@@ -3,6 +3,8 @@
 #include <string.h>
 #include "math_bits.h"  // For alignment macros
 
+#define STACK_ALIGN 16
+
 // Stack allocator internal allocation function
 void* lum_stack_alloc(lum_allocator* self, size_t size, size_t alignment) {
     lum_stack_allocator* stack = (lum_stack_allocator*)self->user_data;
@@ -39,25 +41,32 @@ void lum_stack_reset(lum_allocator* self) {
 // Create a stack allocator
 lum_allocator* lum_create_stack_allocator(size_t size) {
 
-    lum_allocator* allocator = (lum_allocator*)lum_get_default_allocator()->alloc(
-        lum_get_default_allocator(), sizeof(lum_allocator), _Alignof(lum_allocator)
-    );
+    lum_allocator* allocator = lum_create_default_allocator();
+    if (!allocator)
+        return NULL;
+
+    lum_stack_allocator* stack = allocator->alloc(allocator,
+        sizeof(lum_stack_allocator), _Alignof(lum_stack_allocator));
+    if (!stack)
+    {
+        allocator->free(allocator, allocator);
+        return NULL;
+    }
+
+    stack->buffer = allocator->alloc(allocator, size, STACK_ALIGN);
+    if (!stack->buffer) {
+        allocator->free(allocator, stack);
+        allocator->free(allocator, allocator);
+        return NULL;
+    }
     
-    lum_stack_allocator* stack = (lum_stack_allocator*)lum_get_default_allocator()->alloc(
-        lum_get_default_allocator(), sizeof(lum_stack_allocator), _Alignof(lum_stack_allocator)
-    );
-
-    stack->buffer = (char*)lum_get_default_allocator()->alloc(
-        lum_get_default_allocator(), size, 16 // Align to 16 bytes for SIMD
-    );
-    stack->size = size;
-    stack->offset = 0;
-    stack->prev_offset = 0;
-
-    allocator->alloc = lum_stack_alloc;
-    allocator->free = lum_stack_pop;
-    allocator->reset = lum_stack_reset;
-    allocator->realloc = NULL;  // Not supported
+    stack->size          = size;
+    stack->offset        = 0;
+    stack->prev_offset   = 0;
+    allocator->alloc     = lum_stack_alloc;
+    allocator->free      = lum_stack_pop;
+    allocator->reset     = lum_stack_reset;
+    allocator->realloc   = NULL;  // Not supported
     allocator->user_data = stack;
 
     return allocator;
@@ -69,18 +78,12 @@ void lum_destroy_stack_allocator(lum_allocator* allocator) {
         return;
     lum_stack_allocator* stack = (lum_stack_allocator*)allocator->user_data;
 
-    if (!stack) 
-        return;
-    
-    // Use the allocator's free function if it's available
-    if (allocator->free) {
-        allocator->free(allocator, stack->buffer);
-        allocator->free(allocator, stack);
+    if (!stack){
         allocator->free(allocator, allocator);
-    } else {
-        // Fallback to system free (shouldn't happen if allocator is valid)
-        free(stack->buffer);
-        free(stack);
-        free(allocator);
+        return;
     }
+    if (stack->buffer)
+        allocator->free(allocator, stack->buffer);
+    allocator->free(allocator, stack);
+    allocator->free(allocator, allocator);
 }

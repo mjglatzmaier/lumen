@@ -12,6 +12,7 @@ set(LUM_CORE_SRC
     memory/allocators/mem_general.c
     memory/allocators/mem_frame.c
     memory/allocators/mem_stack.c
+    memory/allocators/mem_pool.c
     #CONTAINERS
     #containers/cont_da.c
 )
