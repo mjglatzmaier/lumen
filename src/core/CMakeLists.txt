@@ -1,22 +1,40 @@
 project(LumenCore C)
 
-# Enable SIMD Support
-option(USE_SIMD "Enable SIMD optimizations" ON)
-
 # Define Source Files
 set(LUM_CORE_SRC
-    math/math_vec.c
-    math/math_mat.c
+    # MATH
+    math/math_vec3.c
+    math/math_vec4.c
+    math/math_mat3.c
+    math/math_mat4.c
+    math/math_fast.c
+    # MEMORY
+    memory/allocators/mem_general.c
+    memory/allocators/mem_frame.c
+    memory/allocators/mem_stack.c
+    memory/allocators/mem_pool.c
+    # JOB SYSTEM/WORKER THREADS
+    threads/lum_worker.c
+    threads/job_queue.c
+    threads/job_scheduler.c
 )
 
 # Create the LumenCore Library
 add_library(LumenCore STATIC ${LUM_CORE_SRC})
 
+# Enable mimalloc if the option is set
+if(USE_MIMALLOC)
+    message(STATUS "Mimalloc is enabled in src/CMakeLists.txt")
+    target_link_libraries(LumenCore mimalloc-static)
+    target_compile_definitions(LumenCore PUBLIC USE_MIMALLOC)
+endif()
+
 # Include Directories
 target_include_directories(LumenCore PUBLIC
     ${CMAKE_CURRENT_SOURCE_DIR}
     ${CMAKE_CURRENT_SOURCE_DIR}/math
-    ${CMAKE_CURRENT_SOURCE_DIR}/../../submodules/simde
+    ${CMAKE_CURRENT_SOURCE_DIR}/memory
+    ${CMAKE_CURRENT_SOURCE_DIR}/threads
 )
 
 # Compiler Flags for SIMD

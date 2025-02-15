@@ -15,35 +15,32 @@ message(STATUS "Configuring build type: ${CMAKE_BUILD_TYPE}")
 # Configuration-specific compiler options
 if(CMAKE_BUILD_TYPE STREQUAL "Debug")
     message(STATUS "Applying Debug compilation flags")
-    set(CMAKE_C_FLAGS "${CMAKE_C_FLAGS} -Og -g -Wall -Wextra -DDEBUG")
+    set(CMAKE_C_FLAGS "${CMAKE_C_FLAGS} -Og -g -Wall -Wextra -Wpedantic -msse4.2 -mpopcnt -mlzcnt -mtune=native -DDEBUG")
 elseif(CMAKE_BUILD_TYPE STREQUAL "Release")
     message(STATUS "Applying Release compilation flags")
-    set(CMAKE_C_FLAGS "${CMAKE_C_FLAGS} -O3 -march=native -DNDEBUG")
+    set(CMAKE_C_FLAGS "${CMAKE_C_FLAGS} -O3 -march=native -msse4.2 -mpopcnt -mlzcnt -mtune=native -DNDEBUG")
 elseif(CMAKE_BUILD_TYPE STREQUAL "RelWithDebInfo")
     message(STATUS "Applying RelWithDebInfo compilation flags")
-    set(CMAKE_C_FLAGS "${CMAKE_C_FLAGS} -O2 -g -march=native -DNDEBUG")
+    set(CMAKE_C_FLAGS "${CMAKE_C_FLAGS} -O2 -g -march=native -msse4.2 -mpopcnt -mlzcnt -mtune=native -DNDEBUG")
 elseif(CMAKE_BUILD_TYPE STREQUAL "MinSizeRel")
     message(STATUS "Applying MinSizeRel compilation flags")
-    set(CMAKE_C_FLAGS "${CMAKE_C_FLAGS} -Os -DNDEBUG")
+    set(CMAKE_C_FLAGS "${CMAKE_C_FLAGS} -Os -msse4.2 -mpopcnt -mlzcnt -mtune=native -DNDEBUG")
 endif()
 
 # Check for SIMD support flag
 option(USE_SIMD "Enable SIMD optimizations" OFF)
+
+# Check for mimalloc support
+option(USE_MIMALLOC "Enable mimalloc as the memory allocator" OFF)
 
 if(USE_SIMD)
     message(STATUS "Enabling SIMD optimizations")
     set(CMAKE_C_FLAGS "${CMAKE_C_FLAGS} -msse4.1 -mfma -mavx2 -DUSE_SIMD")
 endif()
 
-
 # Ensure a valid C++ compiler exists (needed for mimalloc)
 if(NOT CMAKE_CXX_COMPILER)
     find_program(CMAKE_CXX_COMPILER NAMES clang++ g++ c++ REQUIRED)
-endif()
-
-# Set compiler flags (globally)
-if(USE_SIMD)
-    set(CMAKE_C_FLAGS "${CMAKE_C_FLAGS} -msse4.1 -march=native")
 endif()
 
 # Add the Vulkan library
@@ -60,39 +57,56 @@ add_executable(Lumen
     src/renderer/vulkan/vulkan_renderer.c
 )
 
+# Add mimalloc if requested
+if(USE_MIMALLOC)
+    # Ensure mimalloc is built as a static library in C mode
+    set(MI_BUILD_TESTS OFF CACHE BOOL "Disable mimalloc tests")
+    set(MI_BUILD_SHARED OFF CACHE BOOL "Build mimalloc as a static library")
+    set(MI_BUILD_STATIC ON CACHE BOOL "Ensure mimalloc is built as a static library")
+    set(MI_OVERRIDE OFF CACHE BOOL "Disable C++ new/delete overrides")
+    add_subdirectory(submodules/mimalloc)
+    message(STATUS "Using mimalloc as allocator")
+endif()
+
 # Add the core module
 add_subdirectory(src/core)
 
-# Ensure mimalloc is built as a static library in C mode
-set(MI_BUILD_TESTS OFF CACHE BOOL "Disable mimalloc tests")
-set(MI_BUILD_SHARED OFF CACHE BOOL "Build mimalloc as a static library")
-set(MI_BUILD_STATIC ON CACHE BOOL "Ensure mimalloc is built as a static library")
-set(MI_OVERRIDE OFF CACHE BOOL "Disable C++ new/delete overrides")
-
-# Add mimalloc from submodules
-add_subdirectory(submodules/mimalloc)
-
-# Header only third party libs
-include_directories(submodules/FastNoiseLite/C)
-include_directories(submodules/simde)
-
 # Link
-target_link_libraries(Lumen PRIVATE Vulkan::Vulkan glfw LumenCore mimalloc-static)
+target_link_libraries(Lumen PRIVATE Vulkan::Vulkan glfw LumenCore)
 
 # Include directories
 target_include_directories(Lumen PRIVATE
     src
     inc
-    submodules/fastnoiselite
-    submodules/imgui
-    submodules/mimalloc/include
+    submodules/stb
+    #submodules/imgui
+    #submodules/FastNoiseLite/C
 )
 
-# Create unit test executable
-# Include µnit (test framework)
-set(MUNIT_DIR ${CMAKE_SOURCE_DIR}/submodules/munit)
-include_directories(${MUNIT_DIR})
-add_executable(LumenTests tests/math_tests.c ${MUNIT_DIR}/munit.c)
+# Conditionally includes
+if(USE_MIMALLOC)
+    list(APPEND INCLUDE_DIRS submodules/mimalloc/include)
+endif()
 
-# Link core math library
+# Create unit test executable
+add_executable(LumenTests
+    tests/runner.c
+    tests/math/math_mat_tests.c
+    tests/math/math_vec_tests.c
+    tests/memory/test_alloc_benchmark.c
+    tests/memory/test_alloc_general.c
+    tests/memory/test_alloc_frame.c
+    tests/memory/test_alloc_stack.c
+    tests/memory/test_alloc_pool.c
+    tests/scheduling/test_job_scheduler.c
+    tests/containers/test_cont_da.c)
+
 target_link_libraries(LumenTests PRIVATE LumenCore)
+
+target_include_directories(LumenTests PRIVATE
+    src
+    inc
+    submodules/stb
+    #submodules/imgui
+    #submodules/FastNoiseLite/C
+)

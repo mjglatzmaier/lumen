@@ -1,12 +1,6 @@
-[submodule "submodules/simde"]
-	path = submodules/simde
-	url = https://github.com/simd-everywhere/simde.git
 [submodule "submodules/mimalloc"]
 	path = submodules/mimalloc
 	url = https://github.com/microsoft/mimalloc.git
 [submodule "submodules/FastNoiseLite"]
 	path = submodules/FastNoiseLite
 	url = https://github.com/Auburn/FastNoiseLite.git
-[submodule "submodules/munit"]
-	path = submodules/munit
-	url = https://github.com/nemequ/munit.git
