@@ -2,10 +2,10 @@
 #include <stdlib.h>
 #include <stdatomic.h>
 #include <assert.h>
-#include <pthread.h>
 #include <time.h>
 #include <stdbool.h>
 #include "job_scheduler.h"
+#include "platform.h"
 #include "../test_framework.h"
 
 #define NUM_TEST_JOBS 100000
@@ -113,16 +113,16 @@ static bool test_performance() {
  */
 static bool test_thread_safety() {
     jobs_executed = 0;
-    pthread_t threads[WORKER_COUNT];
+    lum_thread threads[WORKER_COUNT];
 
     job_scheduler_init();
 
     for (int i = 0; i < WORKER_COUNT; i++) {
-        pthread_create(&threads[i], NULL, worker_submit_jobs, &i);
+        threads[i] = lum_create_thread(worker_submit_jobs, &i);
     }
 
     for (int i = 0; i < WORKER_COUNT; i++) {
-        pthread_join(threads[i], NULL);
+        lum_thread_join(threads[i]);
     }
     job_scheduler_shutdown();
 
