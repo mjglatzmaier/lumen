@@ -22,12 +22,8 @@ typedef struct JobQueue {
     atomic_int bottom;
 } JobQueue;
 
-//void job_system_init();
-//void submit_job(Job *job);
 void push_job(JobQueue *queue, Job *job);
 Job *pop_job(JobQueue *queue);
 Job *steal_job(JobQueue *queue);
-//void wait_for_job(Job *job);
-//void execute_job(Job *job);
 
 #endif // JOB_QUEUE_H
