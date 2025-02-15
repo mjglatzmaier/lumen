@@ -20,6 +20,18 @@ void test_job_function(void *arg) {
     atomic_fetch_add(&worker_distribution[worker_id], 1);
 }
 
+void calc_pi(void *arg) {
+    int num_samples = *(int *)arg;
+    double sum = 0.0;
+
+    for (int i = 0; i < num_samples; i++) {
+        double x = (double)rand() / RAND_MAX;
+        double y = (double)rand() / RAND_MAX;
+        if (x * x + y * y <= 1.0) sum += 1.0;
+    }
+    double result = (sum / num_samples) * 4.0;
+}
+
 // Start worker threads that submit jobs concurrently
 void *worker_submit_jobs(void *arg)
 {
@@ -98,12 +110,14 @@ static bool test_performance() {
 
     for (int i = 0; i < NUM_TEST_JOBS; i++) {
         Job *job = malloc(sizeof(Job));
-        job->function = test_job_function;
+        job->function = calc_pi;
         job->data = malloc(sizeof(int));
-        *(int *)job->data = i % WORKER_COUNT;
+        *(int *)job->data = 10000000;
         job_scheduler_submit(job);
     }
     job_scheduler_shutdown();
+    assert(jobs_executed == NUM_TEST_JOBS && "Failed: Some jobs were lost due to potential race conditions.");
+
     return true;
 }
 
