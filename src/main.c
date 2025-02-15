@@ -10,10 +10,15 @@
 
 void framebufferResizeCallback(GLFWwindow* window, int width, int height) {
     Renderer* renderer = (Renderer*)glfwGetWindowUserPointer(window);
-    if (renderer && renderer->resize) {
-        //printf("⚡ Resize event triggered: %dx%d\n", width, height);
-        renderer->resize(renderer, width, height);
+    if (!renderer) return;
+
+    VulkanRenderer* vkRenderer = (VulkanRenderer*) renderer;
+
+    if (width == 0 || height == 0) {
+        printf("🖥 Window minimized, ignoring resize.\n");
+        return;  // ✅ Ignore minimize events
     }
+    renderer->resize(renderer, width, height);
 }
 
 int main() {

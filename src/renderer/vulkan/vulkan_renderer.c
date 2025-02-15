@@ -142,52 +142,82 @@ void selectPhysicalDevice(VulkanRenderer* renderer) {
 }
 
 bool createLogicalDevice(VulkanRenderer* renderer) {
+    fprintf(stderr, "🟢 Creating Vulkan Logical Device...\n");
+
+    // 🔹 Query Queue Families
+    uint32_t queueFamilyCount = 0;
+    vkGetPhysicalDeviceQueueFamilyProperties(renderer->physicalDevice, &queueFamilyCount, NULL);
+    VkQueueFamilyProperties* queueFamilies = malloc(sizeof(VkQueueFamilyProperties) * queueFamilyCount);
+    vkGetPhysicalDeviceQueueFamilyProperties(renderer->physicalDevice, &queueFamilyCount, queueFamilies);
+    
+    int graphicsFamily = -1;
+    int presentFamily = -1;
+
+    for (uint32_t i = 0; i < queueFamilyCount; i++) {
+        if (queueFamilies[i].queueFlags & VK_QUEUE_GRAPHICS_BIT) {
+            graphicsFamily = i;
+        }
+
+        VkBool32 presentSupport = VK_FALSE;
+        vkGetPhysicalDeviceSurfaceSupportKHR(renderer->physicalDevice, i, renderer->surface, &presentSupport);
+        if (presentSupport) {
+            presentFamily = i;
+        }
+
+        if (graphicsFamily != -1 && presentFamily != -1) break;
+    }
+
+    free(queueFamilies);
+
+    if (graphicsFamily == -1 || presentFamily == -1) {
+        fprintf(stderr, "❌ No valid queue families found!\n");
+        exit(1);
+    }
+
+    fprintf(stderr, "🟢 Using Graphics Queue Family Index: %d\n", graphicsFamily);
+    fprintf(stderr, "🟢 Using Present Queue Family Index: %d\n", presentFamily);
+
+    // 🔹 Define Queue Priorities
     float queuePriority = 1.0f;
-    VkDeviceQueueCreateInfo queueCreateInfo = {0};
-    queueCreateInfo.sType = VK_STRUCTURE_TYPE_DEVICE_QUEUE_CREATE_INFO;
-    queueCreateInfo.queueFamilyIndex = renderer->graphicsQueueFamilyIndex;  // ✅ Ensure correct queue family index
-    queueCreateInfo.queueCount = 1;
-    queueCreateInfo.pQueuePriorities = &queuePriority;
+    VkDeviceQueueCreateInfo queueCreateInfos[2] = {0};
 
-    // Enable the required device extensions
-    const char* deviceExtensions[] = {
-        VK_KHR_SWAPCHAIN_EXTENSION_NAME,          // Required for swapchains
-    #ifdef PLATFORM_MACOS
-        "VK_KHR_portability_subset",             // ✅ Required for MoltenVK
-    #endif
-    };
+    queueCreateInfos[0].sType = VK_STRUCTURE_TYPE_DEVICE_QUEUE_CREATE_INFO;
+    queueCreateInfos[0].queueFamilyIndex = graphicsFamily;
+    queueCreateInfos[0].queueCount = 1;
+    queueCreateInfos[0].pQueuePriorities = &queuePriority;
 
+    queueCreateInfos[1].sType = VK_STRUCTURE_TYPE_DEVICE_QUEUE_CREATE_INFO;
+    queueCreateInfos[1].queueFamilyIndex = presentFamily;
+    queueCreateInfos[1].queueCount = 1;
+    queueCreateInfos[1].pQueuePriorities = &queuePriority;
+
+    // 🔹 Setup Device Features
     VkPhysicalDeviceFeatures deviceFeatures = {0};
+    vkGetPhysicalDeviceFeatures(renderer->physicalDevice, &deviceFeatures);
+
+    // 🔹 Enable Required Extensions
+    const char* deviceExtensions[] = {VK_KHR_SWAPCHAIN_EXTENSION_NAME};
+
     VkDeviceCreateInfo createInfo = {0};
     createInfo.sType = VK_STRUCTURE_TYPE_DEVICE_CREATE_INFO;
-    createInfo.queueCreateInfoCount = 1;
-    createInfo.pQueueCreateInfos = &queueCreateInfo;
-    createInfo.enabledExtensionCount = 2;
+    createInfo.queueCreateInfoCount = (graphicsFamily == presentFamily) ? 1 : 2;
+    createInfo.pQueueCreateInfos = queueCreateInfos;
     createInfo.pEnabledFeatures = &deviceFeatures;
+    createInfo.enabledExtensionCount = 1;
     createInfo.ppEnabledExtensionNames = deviceExtensions;
 
     if (vkCreateDevice(renderer->physicalDevice, &createInfo, NULL, &renderer->device) != VK_SUCCESS) {
-        fprintf(stderr, "Failed to create Vulkan device with swapchain support!\n");
-        return false;
+        fprintf(stderr, "❌ vkCreateDevice failed! Check GPU/Vulkan setup.\n");
+        exit(1);
     }
 
-        // ✅ Retrieve the graphics queue
-        vkGetDeviceQueue(renderer->device, renderer->graphicsQueueFamilyIndex, 0, &renderer->graphicsQueue);
-        if (renderer->graphicsQueue == VK_NULL_HANDLE) {
-            fprintf(stderr, "❌ Error: Failed to get graphics queue!\n");
-            exit(1);
-        }
-    
-        // ✅ Retrieve the present queue
-        vkGetDeviceQueue(renderer->device, renderer->presentQueueFamilyIndex, 0, &renderer->presentQueue);
-        if (renderer->presentQueue == VK_NULL_HANDLE) {
-            fprintf(stderr, "❌ Error: Failed to get present queue!\n");
-            exit(1);
-        }
-    
-        fprintf(stdout, "✅ Graphics Queue: %p, Present Queue: %p\n", (void*)renderer->graphicsQueue, (void*)renderer->presentQueue);
+    vkGetDeviceQueue(renderer->device, graphicsFamily, 0, &renderer->graphicsQueue);
+    vkGetDeviceQueue(renderer->device, presentFamily, 0, &renderer->presentQueue);
 
-    return true;
+    renderer->graphicsQueueFamilyIndex = graphicsFamily;
+    renderer->presentQueueFamilyIndex = presentFamily;
+
+    fprintf(stderr, "✅ Vulkan Logical Device Created Successfully!\n");
 }
 
 void createSwapchain(VulkanRenderer* renderer) {
@@ -206,13 +236,6 @@ void createSwapchain(VulkanRenderer* renderer) {
     // ✅ Query surface capabilities
     VkSurfaceCapabilitiesKHR capabilities;
     vkGetPhysicalDeviceSurfaceCapabilitiesKHR(renderer->physicalDevice, renderer->surface, &capabilities);
-    //renderer->swapchainExtent = capabilities.currentExtent;
-    
-    // // ✅ Clamp within allowed limits    
-    // renderer->swapchainExtent.width = 
-    //     fmax(capabilities.minImageExtent.width, fmin(capabilities.maxImageExtent.width, renderer->swapchainExtent.width));
-    // renderer->swapchainExtent.height = 
-    //     fmax(capabilities.minImageExtent.height, fmin(capabilities.maxImageExtent.height, renderer->swapchainExtent.height));
 
     // ✅ Query available surface formats
     uint32_t formatCount;
@@ -488,33 +511,45 @@ void drawFrame(VulkanRenderer* renderer) {
         return;
     }
 
+    printf("Resize pending state: %d\n", renderer->resizePending);
+
+    // 🚫 **If resizing, skip draw & let preFrame handle it**
+    if (renderer->resizePending) {
+        printf("🔄 Swapchain out-of-date or resize pending! Skipping draw.\n");
+        return;
+    }
+
+    printf("🖥 Drawing Frame | Swapchain Size: %dx%d\n", 
+        renderer->swapchainExtent.width, renderer->swapchainExtent.height);
+
     uint32_t imageIndex;
     VkFence inFlightFence = renderer->inFlightFences[renderer->currentFrame];
 
-    // ✅ Wait for previous frame to complete before using resources
+    // ✅ **Wait for the previous frame to complete** (important!)
     vkWaitForFences(renderer->device, 1, &inFlightFence, VK_TRUE, UINT64_MAX);
     vkResetFences(renderer->device, 1, &inFlightFence);
 
     VkSemaphore imageAvailableSemaphore = renderer->imageAvailableSemaphores[renderer->currentFrame];
     VkSemaphore renderFinishedSemaphore = renderer->renderFinishedSemaphores[renderer->currentFrame];
 
-    // ✅ Acquire next swapchain image
+    // ✅ **Acquire next swapchain image**
     VkResult result = vkAcquireNextImageKHR(renderer->device, renderer->swapchain, UINT64_MAX,
                                             imageAvailableSemaphore, VK_NULL_HANDLE, &imageIndex);
 
-    if (result == VK_ERROR_OUT_OF_DATE_KHR) {
-        // ✅ NO NEED TO RECREATE SWAPCHAIN HERE
-        // `preFrame()` will handle it!
+    if (result == VK_ERROR_OUT_OF_DATE_KHR || result == VK_SUBOPTIMAL_KHR) {
+        printf("🔄 Swapchain out-of-date! Marking for resize.\n");
+        renderer->resizePending = true;
         return;
-    } else if (result != VK_SUCCESS && result != VK_SUBOPTIMAL_KHR) {
-        fprintf(stderr, "❌ Failed to acquire swapchain image!\n");
-        exit(1);
+    } else if (result != VK_SUCCESS) {
+        fprintf(stderr, "❌ Failed to acquire swapchain image! (%d)\n", result);
+        return;
     }
 
-    // ✅ Reset & record command buffer before submitting
+    // ✅ **Reset & record command buffer**
     vkResetCommandBuffer(renderer->commandBuffers[imageIndex], 0);
     recordCommandBuffer(renderer, imageIndex);
 
+    // ✅ **Submit frame to the GPU**
     VkSubmitInfo submitInfo = {0};
     submitInfo.sType = VK_STRUCTURE_TYPE_SUBMIT_INFO;
 
@@ -527,12 +562,16 @@ void drawFrame(VulkanRenderer* renderer) {
     submitInfo.signalSemaphoreCount = 1;
     submitInfo.pSignalSemaphores = &renderFinishedSemaphore;
 
-    if (vkQueueSubmit(renderer->graphicsQueue, 1, &submitInfo, inFlightFence) != VK_SUCCESS) {
-        fprintf(stderr, "❌ Failed to submit draw command buffer!\n");
-        exit(1);
-    }
+    printf("🚀 Submitting frame %d to GPU...\n", renderer->currentFrame);
+    VkResult submitRes = vkQueueSubmit(renderer->graphicsQueue, 1, &submitInfo, inFlightFence);
 
-    // ✅ Present the frame
+    if (submitRes != VK_SUCCESS) {
+        fprintf(stderr, "❌ Failed to submit draw command buffer! (%d)\n", submitRes);
+        return;
+    }
+    printf("✅ Frame %d submitted successfully!\n", renderer->currentFrame);
+
+    // ✅ **Present frame**
     VkPresentInfoKHR presentInfo = {0};
     presentInfo.sType = VK_STRUCTURE_TYPE_PRESENT_INFO_KHR;
     presentInfo.waitSemaphoreCount = 1;
@@ -542,16 +581,19 @@ void drawFrame(VulkanRenderer* renderer) {
     presentInfo.pImageIndices = &imageIndex;
 
     result = vkQueuePresentKHR(renderer->presentQueue, &presentInfo);
+
     if (result == VK_ERROR_OUT_OF_DATE_KHR || result == VK_SUBOPTIMAL_KHR) {
-        renderer->resizePending = true;  // ✅ Set resize flag for `preFrame()`
+        printf("🔄 Swapchain presentation issue! Marking for resize.\n");
+        renderer->resizePending = true;
     } else if (result != VK_SUCCESS) {
-        fprintf(stderr, "❌ Failed to present swapchain image!\n");
-        exit(1);
+        fprintf(stderr, "❌ Failed to present swapchain image! (%d)\n", result);
+        return;
     }
 
-    // ✅ Advance to the next frame
+    // ✅ **Advance to next frame**
     renderer->currentFrame = (renderer->currentFrame + 1) % MAX_FRAMES_IN_FLIGHT;
 }
+
 
 VkShaderModule createShaderModule(VkDevice device, const char* filename) {
     char fullPath[512];
@@ -735,29 +777,36 @@ bool createGraphicsPipeline(VulkanRenderer* renderer) {
 }
 
 void recreateSwapchain(VulkanRenderer* vkRenderer) {
-    if (!vkRenderer) {
-        fprintf(stderr, "❌ Error: recreateSwapchain called with NULL VulkanRenderer\n");
-        return;
+    if (!vkRenderer) return;
+
+    vkDeviceWaitIdle(vkRenderer->device);  // ✅ Wait until GPU is fully idle
+
+    int newWidth, newHeight;
+    glfwGetFramebufferSize(vkRenderer->window, &newWidth, &newHeight);
+
+    // ✅ Ensure valid non-zero size before continuing
+    while (newWidth == 0 || newHeight == 0) {
+        glfwGetFramebufferSize(vkRenderer->window, &newWidth, &newHeight);
     }
 
-    vkDeviceWaitIdle(vkRenderer->device);  // ✅ Ensure GPU is idle before resizing
-
-    // ✅ Ensure all in-flight frames finish
+    // ✅ Synchronize before destroying old swapchain
     for (size_t i = 0; i < MAX_FRAMES_IN_FLIGHT; i++) {
         vkWaitForFences(vkRenderer->device, 1, &vkRenderer->inFlightFences[i], VK_TRUE, UINT64_MAX);
     }
 
+    printf("🔄 Updating swapchain size to: %dx%d\n", newWidth, newHeight);
+
     cleanupSwapchain(vkRenderer);  // ✅ Destroy old swapchain safely
-
-    createSwapchain(vkRenderer);  // ✅ Recreate swapchain with new window size
+    createSwapchain(vkRenderer);   // ✅ Recreate swapchain
     createImageViews(vkRenderer);
-    createFramebuffers(vkRenderer);  // ✅ Allocate new framebuffers
+    createFramebuffers(vkRenderer);
 
-    // ✅ Allocate command buffers after recreating the swapchain
+    // ✅ Ensure command buffers are recreated
     createCommandBuffers(vkRenderer);
 
-    vkRenderer->resizePending = false;  // ✅ Reset flag AFTER swapchain is ready
+    vkRenderer->resizePending = false;
 }
+
 
 void createSyncObjects(VulkanRenderer* renderer) {
     VkSemaphoreCreateInfo semaphoreInfo = {0};
@@ -869,16 +918,29 @@ static void shutdownVulkan(Renderer* renderer) {
 
 static void resizeVulkan(Renderer* renderer, int width, int height) {
     VulkanRenderer* vkRenderer = (VulkanRenderer*) renderer;
-    if (!vkRenderer) {
-        fprintf(stderr, "❌ Error: resizeVulkan called with NULL VulkanRenderer\n");
-        return;
+    if (!vkRenderer) return;
+
+    // ✅ Ensure the new size is valid and different
+    if (width == vkRenderer->swapchainExtent.width && 
+        height == vkRenderer->swapchainExtent.height) return;
+
+    printf("🔄 Resizing Vulkan Swapchain to: %dx%d\n", width, height);
+
+    // ✅ Set pending flag (but don't block drawFrame)
+    vkRenderer->resizePending = true;
+
+    // 🔄 Instead of `vkDeviceWaitIdle()`, **wait for fences first**
+    for (size_t i = 0; i < MAX_FRAMES_IN_FLIGHT; i++) {
+        vkWaitForFences(vkRenderer->device, 1, &vkRenderer->inFlightFences[i], VK_TRUE, UINT64_MAX);
     }
-    // ✅ Ensure resize is only set **once** per resize event
-    if (!vkRenderer->resizePending) {
-        vkRenderer->resizePending = true;
-        fprintf(stdout, "🔄 Resizing to %dx%d\n", width, height);
-    }
+
+    // ✅ Recreate swapchain
+    recreateSwapchain(vkRenderer);
+
+    // ✅ Reset flag so `drawFrame()` continues normally
+    vkRenderer->resizePending = false;
 }
+
 
 static void beginFrameVulkan(Renderer* renderer) {
     VulkanRenderer* vkRenderer = (VulkanRenderer*) renderer;
@@ -893,28 +955,50 @@ static void endFrameVulkan(Renderer* renderer) {
     // Nothing for now
 }
 
+#define RESIZE_STABILITY_THRESHOLD 10  // Frames before resize is triggered
+
 static void vulkanPreFrame(Renderer* renderer) {
     VulkanRenderer* vkRenderer = (VulkanRenderer*) renderer;
-    if (!vkRenderer) {
-        fprintf(stderr, "❌ Error: drawFrame called with NULL VulkanRenderer\n");
-        return;
+    if (!vkRenderer) return;
+
+    int newWidth, newHeight;
+    glfwGetFramebufferSize(vkRenderer->window, &newWidth, &newHeight);
+
+    static int lastWidth = 0, lastHeight = 0;
+    static int resizeStableFrames = 0;
+
+    // ✅ Reset counter if window size changes
+    if (newWidth != lastWidth || newHeight != lastHeight) {
+        resizeStableFrames = 0;
+        lastWidth = newWidth;
+        lastHeight = newHeight;
+        return;  // 🚫 Don't resize yet
     }
 
-    // Handle resizing
-    if (vkRenderer->resizePending && inputState.mouseReleased) {
-        int width, height;
-        glfwGetFramebufferSize(vkRenderer->window, &width, &height);
+    // ✅ Only trigger resize when stable for enough frames
+    resizeStableFrames++;
+    if (resizeStableFrames < RESIZE_STABILITY_THRESHOLD) return;
 
-        if (width > 0 && height > 0) {
-            printf("🛠 Resizing Vulkan renderer to: %dx%d\n", width, height);
-            vkDeviceWaitIdle(vkRenderer->device);  // ✅ Wait for GPU to finish
-            recreateSwapchain(vkRenderer);
-            vkRenderer->resizePending = false;
-        }
-        // Not sure we want to do this?
-        inputState.mouseReleased = false;  // ✅ Reset mouse release state
+    // 🚀 Resize only when ALL frames are idle
+    printf("🛠 Resizing Vulkan renderer to: %dx%d\n", newWidth, newHeight);
+    
+    for (size_t i = 0; i < MAX_FRAMES_IN_FLIGHT; i++) {
+        vkWaitForFences(vkRenderer->device, 1, &vkRenderer->inFlightFences[i], VK_TRUE, UINT64_MAX);
     }
+
+    vkDeviceWaitIdle(vkRenderer->device);  // ✅ Ensure GPU is fully idle before recreating swapchain
+
+    // ✅ Perform swapchain recreation
+    vkRenderer->resizePending = true;
+    vkRenderer->swapchainExtent.width = newWidth;
+    vkRenderer->swapchainExtent.height = newHeight;
+    recreateSwapchain(vkRenderer);
+    vkRenderer->resizePending = false;
+
+    resizeStableFrames = 0;  // ✅ Reset stability counter
 }
+
+
 
 Renderer* createVulkanRenderer(void* window) {
     VulkanRenderer* vkRenderer = (VulkanRenderer*) malloc(sizeof(VulkanRenderer));
