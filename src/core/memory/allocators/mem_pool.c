@@ -78,11 +78,10 @@ lum_allocator* lum_create_pool_allocator(size_t object_size, size_t object_count
     pool->object_size = lum_align_up(object_size, POOL_ALIGN);
 
     // Initialize each pointer.
-    pool->buffer = NULL;
-    pool->free_list = NULL;
-    pool->used_slots = NULL;
-
-    pool->buffer = allocator->alloc(allocator, pool->object_size  * object_count, _Alignof(size_t));
+    pool->buffer        = NULL;
+    pool->free_list     = NULL;
+    pool->used_slots    = NULL;
+    pool->buffer        = allocator->alloc(allocator, pool->object_size  * object_count, _Alignof(size_t));
     if (!pool->buffer) {
         printf("Failed to pool buffer from default allocator\n");
         allocator->free(allocator, pool);

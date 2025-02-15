@@ -9,6 +9,7 @@ typedef struct {
     size_t size;        // Total size of buffer
     size_t offset;      // Current allocation offset
     size_t prev_offset; // Previous allocation offset (for checkpointing)
+    void (*original_free)(lum_allocator*, void*); 
 } lum_stack_allocator;
 
 // Create a new stack allocator

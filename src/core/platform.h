@@ -25,11 +25,13 @@
     typedef HANDLE lum_thread;
     typedef DWORD lum_thread_id;
     typedef CRITICAL_SECTION lum_mutex;
+    typedef ConditionVariable lum_cond_var;
 #else
     #include <pthread.h>
     typedef pthread_t lum_thread; 
     typedef int lum_thread_id;
     typedef pthread_mutex_t lum_mutex;
+    typedef pthread_cond_t lum_cond_var;
 #endif
 
 // Thread function type
@@ -46,6 +48,15 @@ static inline lum_thread lum_create_thread(lum_thread_func func, void *arg) {
 #endif
 }
 
+static inline void lum_thread_join(lum_thread thread) {
+    #ifdef PLATFORM_WINDOWS
+        WaitForSingleObject(thread, INFINITE);
+        CloseHandle(thread);
+    #else
+        pthread_join(thread, NULL);
+    #endif
+}
+
 // Mutex functions
 static inline void lum_mutex_init(lum_mutex *mutex) {
 #ifdef PLATFORM_WINDOWS
@@ -53,6 +64,46 @@ static inline void lum_mutex_init(lum_mutex *mutex) {
 #else
     pthread_mutex_init(mutex, NULL);
 #endif
+}
+
+static inline void lum_cond_init(lum_cond_var *var) {
+    #ifdef PLATFORM_WINDOWS
+        InitializeConditionVariable(var);
+    #else
+        pthread_cond_init(var, NULL);
+    #endif
+}
+
+static inline void lum_cond_destroy(lum_cond_var *var) {
+    #ifdef PLATFORM_WINDOWS
+        // No-op: Windows condition variables do not need explicit destruction
+    #else
+        pthread_cond_destroy(var);
+    #endif
+}
+
+static inline void lum_cond_signal(lum_cond_var *var) {
+    #ifdef PLATFORM_WINDOWS
+        WakeConditionVariable(var);
+    #else
+        pthread_cond_signal(var);
+    #endif
+}
+
+static inline void lum_cond_broadcast(lum_cond_var *var) {
+    #ifdef PLATFORM_WINDOWS
+        WakeAllConditionVariable(var);
+    #else
+        pthread_cond_broadcast(var);
+    #endif
+}
+
+static inline void lum_cond_wait(lum_cond_var *var, lum_mutex *mutex) {
+    #ifdef PLATFORM_WINDOWS
+        SleepConditionVariableCS(var, mutex, INFINITE);
+    #else
+        pthread_cond_wait(var, mutex);
+    #endif
 }
 
 static inline void lum_mutex_lock(lum_mutex *mutex) {

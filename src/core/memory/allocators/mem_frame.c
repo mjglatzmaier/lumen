@@ -59,6 +59,8 @@ lum_allocator* lum_create_frame_allocator(size_t size) {
         return NULL;
     }
 
+    // Save original free method - necessary to actually delete the pool
+    frame->original_free   = allocator->free;
     frame->size             = size;
     frame->offset           = 0;
     allocator->alloc        = frame_alloc;
@@ -83,9 +85,14 @@ void lum_destroy_frame_allocator(lum_allocator* allocator) {
         return;
     }
 
-    // Use the allocator's free function if it's available
-    if (frame->buffer)
-        allocator->free(allocator, frame->buffer);
+    if (frame->buffer) {
+        frame->original_free(allocator, frame->buffer);
+        frame->buffer = NULL;
+    }
+
+    // **Restore the original allocator behavior before freeing pool**
+    allocator->free = frame->original_free;
+    allocator->user_data = NULL;
     allocator->free(allocator, frame);
     allocator->free(allocator, allocator);
 }

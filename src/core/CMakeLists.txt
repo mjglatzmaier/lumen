@@ -13,8 +13,10 @@ set(LUM_CORE_SRC
     memory/allocators/mem_frame.c
     memory/allocators/mem_stack.c
     memory/allocators/mem_pool.c
-    #CONTAINERS
-    #containers/cont_da.c
+    # JOB SYSTEM/WORKER THREADS
+    threads/lum_worker.c
+    threads/job_queue.c
+    threads/job_scheduler.c
 )
 
 # Create the LumenCore Library
@@ -32,6 +34,7 @@ target_include_directories(LumenCore PUBLIC
     ${CMAKE_CURRENT_SOURCE_DIR}
     ${CMAKE_CURRENT_SOURCE_DIR}/math
     ${CMAKE_CURRENT_SOURCE_DIR}/memory
+    ${CMAKE_CURRENT_SOURCE_DIR}/threads
 )
 
 # Compiler Flags for SIMD

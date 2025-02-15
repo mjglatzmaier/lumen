@@ -1,7 +1,7 @@
 #ifndef LUMEN_ALLOCATOR_H
 #define LUMEN_ALLOCATOR_H
 
-#include <stddef.h>  // for size_t
+#include <stddef.h>
 
 typedef struct lum_allocator {
     void* (*alloc)(struct lum_allocator* self, size_t size, size_t alignment);

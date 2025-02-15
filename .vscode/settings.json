@@ -25,6 +25,8 @@
         "vector": "c",
         "cstdlib": "cpp",
         "locale": "cpp",
-        "assert.h": "c"
+        "assert.h": "c",
+        "queue": "c",
+        "lum_worker.h": "c"
     }
 }

@@ -59,7 +59,8 @@ lum_allocator* lum_create_stack_allocator(size_t size) {
         allocator->free(allocator, allocator);
         return NULL;
     }
-    
+
+    stack->original_free = allocator->free; 
     stack->size          = size;
     stack->offset        = 0;
     stack->prev_offset   = 0;
@@ -68,7 +69,6 @@ lum_allocator* lum_create_stack_allocator(size_t size) {
     allocator->reset     = lum_stack_reset;
     allocator->realloc   = NULL;  // Not supported
     allocator->user_data = stack;
-
     return allocator;
 }
 
@@ -78,12 +78,17 @@ void lum_destroy_stack_allocator(lum_allocator* allocator) {
         return;
     lum_stack_allocator* stack = (lum_stack_allocator*)allocator->user_data;
 
-    if (!stack){
+    if (!stack) {
         allocator->free(allocator, allocator);
         return;
     }
-    if (stack->buffer)
-        allocator->free(allocator, stack->buffer);
+    if (stack->buffer) {
+        stack->original_free(allocator, stack->buffer);
+        stack->buffer = NULL;
+    }
+    // **Restore the original allocator behavior before freeing pool**
+    allocator->free = stack->original_free;
+    allocator->user_data = NULL;
     allocator->free(allocator, stack);
     allocator->free(allocator, allocator);
 }
