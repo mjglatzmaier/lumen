@@ -88,7 +88,7 @@
         "CMAKE_C_COMPILER": "clang",
         "CMAKE_CXX_COMPILER": "clang++",
         "CMAKE_TOOLCHAIN_FILE": "${sourceDir}/../mcl/vcpkg/scripts/buildsystems/vcpkg.cmake",
-        "CMAKE_BUILD_TYPE": "Debug",
+        "CMAKE_BUILD_TYPE": "Release",
         "CMAKE_EXPORT_COMPILE_COMMANDS": "YES", 
         "USE_SIMD": "ON",
         "USE_MIMALLOC": "ON"
@@ -130,7 +130,7 @@
       "configurePreset": "linux-clang"
     },
     {
-      "name": "linux-gcc",
+      "name": "linux",
       "configurePreset": "linux-gcc"
     },
     {

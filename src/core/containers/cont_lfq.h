@@ -62,36 +62,45 @@ static inline bool lum_lfq_full(lum_lfq_t* queue) {
 
 // Push to queue
 static inline bool lum_lfq_enqueue(lum_lfq_t* queue, void* item) {
-    size_t tail = atomic_load(&queue->tail);
-    size_t next_tail = (tail + 1) % queue->capacity;
-    
-    if (next_tail == atomic_load(&queue->head)) 
-        return false; // Full
+    size_t tail, next_tail;
+    do {
+        tail = atomic_load(&queue->tail);
+        next_tail = (tail + 1) % queue->capacity;
 
-    queue->buffer[tail] = item;
-    atomic_store(&queue->tail, next_tail);
+        if (next_tail == atomic_load(&queue->head))
+            return false; // Full
+
+        // **Write to buffer before modifying tail**
+        queue->buffer[tail] = item;
+
+    } while (!atomic_compare_exchange_weak(&queue->tail, &tail, next_tail));
+
     return true;
 }
 
-// Pop from queue
+
 static inline void *lum_lfq_dequeue(lum_lfq_t *queue) {
-    if (!queue) return NULL;  // Prevent invalid access
+    if (!queue) 
+        return NULL;  // Prevent invalid access
 
-    size_t head = atomic_load(&queue->head);
-    size_t tail = atomic_load(&queue->tail);
+    size_t head, tail;
+    void *item;
 
-    // Check if queue is empty
-    if (head == tail) {
-        return NULL;
-    }
+    do {
+        head = atomic_load(&queue->head);
+        tail = atomic_load(&queue->tail);
 
-    // Read and return the value at head index
-    void *item = queue->buffer[head % queue->capacity];
+        if (head == tail) {
+            return NULL;  // Queue is empty
+        }
 
-    // Atomically update head
-    atomic_store(&queue->head, (head + 1) % queue->capacity);
-    
+        // **Read before modifying head**
+        item = queue->buffer[head % queue->capacity];
+
+    } while (!atomic_compare_exchange_weak(&queue->head, &head, (head + 1) % queue->capacity));
+
     return item;
 }
+
 
 #endif // LUM_CONT_LOCK_FREE_QUEUE_H

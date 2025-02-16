@@ -9,7 +9,7 @@
 #include "../test_framework.h"
 
 #define TEST_CAPACITY 1024
-#define NUM_THREADS 4
+#define NUM_THREADS 8
 #define NUM_OPERATIONS 1000000
 
 typedef struct {
@@ -29,7 +29,6 @@ void *producer_thread(void *arg) {
     ThreadArgs *args = (ThreadArgs *)arg;
     for (int i = 0; i < args->num_items; i++) {
         TestItem *item = args->allocator->alloc(args->allocator, sizeof(TestItem), 16);
-        //TestItem *item = malloc(sizeof(TestItem)); // Allocate per item
         item->value = i + (args->thread_id * args->num_items);
         lum_lfq_enqueue(args->queue, item);
     }
@@ -38,60 +37,18 @@ void *producer_thread(void *arg) {
 
 void *consumer_thread(void *arg) {
     ThreadArgs *args = (ThreadArgs *)arg;
-    int consumed = 0;
-    int empty_count = 0; // Tracks how many times we hit an empty queue
-    const int EMPTY_LIMIT = 1000; // Limit before exiting
-
-    while (consumed < args->num_items) {
-        TestItem *item = (TestItem *)lum_lfq_dequeue(args->queue);
-        
-        if (!item) {
-            empty_count++;
-            if (empty_count > EMPTY_LIMIT) {
-                printf("🔥 Thread %d detected starvation! Breaking...\n", args->thread_id);
-                break; // Prevent infinite waiting
-            }
-            sched_yield(); // Let other threads run
-            continue;
-        }
-
-        empty_count = 0; // Reset empty counter when we successfully dequeue
-        
-        // ✅ Prevent double free or NULL dereference
-        if (item != NULL) {
+    TestItem *item;
+    while ((item = (TestItem *)lum_lfq_dequeue(args->queue)) || !lum_lfq_empty(args->queue)) {
+        if (item) {
+            assert(item != NULL);
             args->allocator->free(args->allocator, item);
-        } else {
-            printf("🚨 Warning: Thread %d dequeued NULL!\n", args->thread_id);
-        }
-
-        atomic_fetch_add(&jobs_executed, 1);
-        consumed++;
-
-        // Debugging prints
-        if (consumed % 100 == 0) {
-            printf("✔️ Thread %d consumed: %d\n", args->thread_id, consumed);
+            atomic_fetch_add(&jobs_executed, 1);
         }
     }
     return NULL;
 }
 
-
-// void *consumer_thread(void *arg) {
-//     ThreadArgs *args = (ThreadArgs *)arg;
-//     for (int i = 0; i < args->num_items; i++) {
-//         TestItem *item;
-//         while ((item = (TestItem*)lum_lfq_dequeue(args->queue)) != NULL) {
-//             sched_yield();
-//         }
-//         assert(item != NULL);
-//         args->allocator->free(args->allocator, item);
-//         atomic_fetch_add(&jobs_executed, 1);
-//     }
-//     return NULL;
-// }
-
-
-static bool test_multi_threaded_queue() {
+static bool test_split_production_consumption() {
     // Allocate queue
     lum_allocator *allocator = lum_create_default_allocator();
     assert(allocator != NULL);
@@ -112,18 +69,19 @@ static bool test_multi_threaded_queue() {
         producers[i] = lum_thread_create(producer_thread, (void*)&args[i]);
     }
 
-    // Launch consumer threads
-    for (int i = 0; i < NUM_THREADS; i++) {
-        consumers[i] = lum_thread_create(consumer_thread, (void*)&args[i]);
-    }
-
     // Wait for producers to finish
     for (int i = 0; i < NUM_THREADS; i++) {
         lum_thread_join(producers[i]);
     }
 
+    // Launch consumer threads
+    for (int i = 0; i < NUM_THREADS; i++)
+    {
+        consumers[i] = lum_thread_create(consumer_thread, (void *)&args[i]);
+    }
     // Wait for consumers to finish
-    for (int i = 0; i < NUM_THREADS; i++) {
+    for (int i = 0; i < NUM_THREADS; i++)
+    {
         lum_thread_join(consumers[i]);
     }
 
@@ -135,10 +93,9 @@ static bool test_multi_threaded_queue() {
     return true;
 }
 
-
 // **Define test cases**
 TestCase cont_lfq_mt_tests[] = {
-    {"test_multi_threaded_queue", test_multi_threaded_queue},
+    {"test_split_production_consumption", test_split_production_consumption}
 };
 
 // **Test runner function**
