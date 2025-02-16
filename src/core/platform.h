@@ -38,7 +38,7 @@
 typedef void* (*lum_thread_func)(void*);
 
 // Thread creation
-static inline lum_thread lum_create_thread(lum_thread_func func, void *arg) {
+static inline lum_thread lum_thread_create(lum_thread_func func, void *arg) {
 #ifdef PLATFORM_WINDOWS
     return CreateThread(NULL, 0, (LPTHREAD_START_ROUTINE)func, arg, 0, NULL);
 #else

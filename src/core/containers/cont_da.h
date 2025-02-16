@@ -36,13 +36,13 @@ static inline void* lum_create_dynamic_array_internal(size_t elem_size, size_t c
 // Example useage: create_dynamic_arr_with_allocator(double, 1024, NULL);
 // Will create a pool array with max size 1024 (not dynamic)
 // To create a dynamic array pass in the default allocator
-#define cont_da_create(type, count, allocator) \
+#define lum_da_create(type, count, allocator) \
     ((type*) lum_create_dynamic_array_internal(sizeof(type), count, allocator))
 
-#define cont_da_size(a)          stbds_arrlen(a)
-#define cont_da_reserve(a, n)    stbds_arrgrow(a, n, 1)
-#define cont_da_free(a)          stbds_arrfree(a)
-#define cont_da_pop(a)           stbds_arrpop(a)
-#define cont_da_app(a, v)        stbds_arrput(a, v)
+#define lum_da_size(a)          stbds_arrlen(a)
+#define lum_da_reserve(a, n)    stbds_arrgrow(a, n, 1)
+#define lum_da_free(a)          stbds_arrfree(a)
+#define lum_da_pop(a)           stbds_arrpop(a)
+#define lum_da_app(a, v)        stbds_arrput(a, v)
 
 #endif

@@ -72,7 +72,7 @@ endif()
 add_subdirectory(src/core)
 
 # Link
-target_link_libraries(Lumen PRIVATE Vulkan::Vulkan glfw LumenCore)
+target_link_libraries(Lumen PRIVATE Vulkan::Vulkan glfw LumenCore m)
 
 # Include directories
 target_include_directories(Lumen PRIVATE
@@ -98,10 +98,12 @@ add_executable(LumenTests
     tests/memory/test_alloc_frame.c
     tests/memory/test_alloc_stack.c
     tests/memory/test_alloc_pool.c
-    tests/scheduling/test_job_scheduler.c
-    tests/containers/test_cont_da.c)
+    #tests/scheduling/test_job_scheduler.c
+    tests/containers/test_cont_da.c
+    tests/containers/test_cont_lfq.c
+    tests/containers/test_cont_lfq_mt.c)
 
-target_link_libraries(LumenTests PRIVATE LumenCore)
+target_link_libraries(LumenTests PRIVATE LumenCore m)
 
 target_include_directories(LumenTests PRIVATE
     src

@@ -2,6 +2,7 @@
 #include "allocators/mem_alloc.h"
 #include "allocators/mem_stack.h"
 #include <stdio.h>
+#include <stdint.h>
 
 #define STACK_SIZE 1024  // 1 KB for testing
 #define ALIGNMENT 16     // Ensure SIMD alignment

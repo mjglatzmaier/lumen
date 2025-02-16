@@ -27,6 +27,14 @@
         "locale": "cpp",
         "assert.h": "c",
         "queue": "c",
-        "lum_worker.h": "c"
+        "lum_worker.h": "c",
+        "array": "c",
+        "string_view": "c",
+        "stdatomic.h": "c",
+        "mem_pool.h": "c",
+        "variant": "c",
+        "span": "cpp",
+        "atomic": "cpp",
+        "stdio.h": "c"
     }
 }

@@ -13,10 +13,11 @@ set(LUM_CORE_SRC
     memory/allocators/mem_frame.c
     memory/allocators/mem_stack.c
     memory/allocators/mem_pool.c
+
     # JOB SYSTEM/WORKER THREADS
-    threads/lum_worker.c
-    threads/job_queue.c
-    threads/job_scheduler.c
+    #threads/lum_worker.c
+    #threads/job_queue.c
+    #threads/job_scheduler.c
 )
 
 # Create the LumenCore Library

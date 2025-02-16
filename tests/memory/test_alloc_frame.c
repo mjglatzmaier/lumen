@@ -1,6 +1,7 @@
 #include "allocators/mem_frame.h"
 #include "../test_framework.h"
 #include <stdio.h>
+#include <stdint.h>
 
 // Test 1: Basic allocation & reset
 static bool test_frame_alloc_basic() {
