@@ -3,7 +3,8 @@
 
 #include <stdint.h>
 
-typedef struct {
+typedef struct
+{
     float x, y, z, w;
 } __attribute__((aligned(16))) lum_vec4; // use alignas(16) c11?
 

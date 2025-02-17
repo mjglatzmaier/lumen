@@ -1,28 +1,32 @@
-#include "containers/cont_da.h"
-#include <stdio.h>
-#include <assert.h>
-#include <time.h>
-#include <stdbool.h>
 #include "../test_framework.h"
+#include "containers/cont_da.h"
+
+#include <assert.h>
+#include <stdbool.h>
+#include <stdio.h>
+#include <time.h>
 
 // Test dynamic array functionality
-bool test_da_default_alloc() {
+bool test_da_default_alloc()
+{
     // Instantiate an alloc
-    lum_allocator* allocator = (lum_allocator*)lum_create_default_allocator();
-    int* array = lum_da_create(int, 0, allocator);
+    lum_allocator *allocator = (lum_allocator *) lum_create_default_allocator();
+    int           *array     = lum_da_create(int, 0, allocator);
 
     // Check empty state
     assert(lum_da_size(array) == 0);
 
     // Push values
-    for (int i = 0; i < 10; i++) {
+    for (int i = 0; i < 10; i++)
+    {
         lum_da_app(array, i);
         assert(array != NULL);
         assert(lum_da_size(array) == i + 1);
     }
 
     // Validate stored values
-    for (int i = 0; i < 10; i++) {
+    for (int i = 0; i < 10; i++)
+    {
         assert(array[i] == i);
     }
 
@@ -32,12 +36,14 @@ bool test_da_default_alloc() {
 }
 
 // Test large allocations
-bool test_da_large_alloc() {
-    lum_allocator* allocator = (lum_allocator*)lum_create_default_allocator();
-    int* array = lum_da_create(int, 0, allocator);
-    const int N = 1000000;
+bool test_da_large_alloc()
+{
+    lum_allocator *allocator = (lum_allocator *) lum_create_default_allocator();
+    int           *array     = lum_da_create(int, 0, allocator);
+    const int      N         = 1000000;
 
-    for (int i = 0; i < N; i++) {
+    for (int i = 0; i < N; i++)
+    {
         lum_da_app(array, i);
         assert(array != NULL);
     }
@@ -48,12 +54,14 @@ bool test_da_large_alloc() {
 }
 
 // Test clearing an array
-bool test_lum_da_clear() {
-    lum_allocator* allocator = (lum_allocator*)lum_create_default_allocator();
-    int* array = lum_da_create(int, 0, allocator);
-    int val = 42;
+bool test_lum_da_clear()
+{
+    lum_allocator *allocator = (lum_allocator *) lum_create_default_allocator();
+    int           *array     = lum_da_create(int, 0, allocator);
+    int            val       = 42;
 
-    for (int i = 0; i < 100; i++) {
+    for (int i = 0; i < 100; i++)
+    {
         lum_da_app(array, val);
     }
 
@@ -62,7 +70,6 @@ bool test_lum_da_clear() {
     assert(lum_da_size(array) == 0);
     return true;
 }
-
 
 // **Define test cases**
 TestCase cont_da_tests[] = {
@@ -73,4 +80,3 @@ TestCase cont_da_tests[] = {
 
 // **Test runner function**
 int cont_da_tests_count = sizeof(cont_da_tests) / sizeof(TestCase);
-

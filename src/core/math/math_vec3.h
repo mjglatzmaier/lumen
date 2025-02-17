@@ -1,10 +1,11 @@
 #ifndef LUMEN_MATH_VEC3_H
 #define LUMEN_MATH_VEC3_H
 
-#include <stdint.h>
 #include <stdbool.h>
+#include <stdint.h>
 
-typedef struct {
+typedef struct
+{
     float x, y, z;
 } lum_vec3;
 

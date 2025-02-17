@@ -1,11 +1,13 @@
-#include "math_vec3.h"
 #include "../test_framework.h"
+#include "math_vec3.h"
+
 #include <math.h>
 
 // **Vec3 Addition**
-bool test_vec3_add() {
-    lum_vec3 a = {1.0f, 2.0f, 3.0f};
-    lum_vec3 b = {4.0f, 5.0f, 6.0f};
+bool test_vec3_add()
+{
+    lum_vec3 a      = {1.0f, 2.0f, 3.0f};
+    lum_vec3 b      = {4.0f, 5.0f, 6.0f};
     lum_vec3 result = lum_vec3_add(a, b);
 
     ASSERT_FLOAT_EQ(result.x, 5.0f, 0.0001f);
@@ -15,10 +17,11 @@ bool test_vec3_add() {
 }
 
 // **Vec3 Dot Product**
-bool test_vec3_dot() {
-    lum_vec3 a = {1.0f, 2.0f, 3.0f};
-    lum_vec3 b = {4.0f, 5.0f, 6.0f};
-    float result = lum_vec3_dot(a, b);
+bool test_vec3_dot()
+{
+    lum_vec3 a      = {1.0f, 2.0f, 3.0f};
+    lum_vec3 b      = {4.0f, 5.0f, 6.0f};
+    float    result = lum_vec3_dot(a, b);
     ASSERT_FLOAT_EQ(result, 32.0f, 0.0001f);
     return true;
 }

@@ -4,7 +4,8 @@
 #include <time.h>
 
 // Returns time in seconds with nanosecond precision
-static inline double get_time() {
+static inline double get_time()
+{
     struct timespec ts;
     clock_gettime(CLOCK_MONOTONIC, &ts);
     return ts.tv_sec + ts.tv_nsec * 1e-9;

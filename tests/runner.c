@@ -9,7 +9,7 @@ extern TestCase frame_alloc_tests[];
 extern TestCase stack_alloc_tests[];
 extern TestCase cont_da_tests[];
 extern TestCase pool_alloc_tests[];
-//extern TestCase job_scheduling_tests[];
+// extern TestCase job_scheduling_tests[];
 extern TestCase cont_lfq_tests[];
 extern TestCase cont_lfq_mt_tests[];
 extern TestCase lum_scheduler_tests[];
@@ -23,12 +23,13 @@ extern int frame_alloc_tests_count;
 extern int stack_alloc_tests_count;
 extern int cont_da_tests_count;
 extern int pool_alloc_tests_count;
-//extern int job_scheduling_tests_count;
+// extern int job_scheduling_tests_count;
 extern int cont_lfq_tests_count;
 extern int cont_lfq_mt_tests_count;
 extern int lum_scheduler_tests_count;
 
-int main() {
+int main()
+{
     printf("\n🚀 Running Lumen Unit Tests...\n");
 
     RUN_TESTS("Vec Tests", vec_tests, vec_tests_count);
