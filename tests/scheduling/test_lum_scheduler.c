@@ -1,0 +1,160 @@
+#include "lum_scheduler.h"
+#include "lum_thread.h"
+#include "../memory/allocators/mem_alloc.h"
+#include "../test_framework.h"
+#include "platform.h"
+#include <assert.h>
+#include <stdio.h>
+#include <stdlib.h>
+#include <stdatomic.h>
+#include <time.h>
+
+#define TEST_NUM_JOBS 64
+#define NUM_THREADS 8
+#define PI_ITERATIONS 1000000
+
+atomic_int fast_counter = 0;
+atomic_int heavy_counter = 0;
+
+// Simple job function that increments the counter
+void* fast_job(void *arg) {
+    (void)arg;  // Unused
+    atomic_fetch_add(&fast_counter, 1);
+    return NULL;
+}
+
+// Heavy compute job: Monte Carlo Pi estimation
+static void*  heavy_job(void *arg) {
+    (void)arg;
+    int inside_circle = 0;
+    for (int i = 0; i < PI_ITERATIONS; i++) {
+        double x = (double)rand() / RAND_MAX;
+        double y = (double)rand() / RAND_MAX;
+        if (x*x + y*y <= 1.0) 
+            inside_circle++;
+    }
+    double pi_estimate = (4.0 * inside_circle) / PI_ITERATIONS;
+    atomic_fetch_add(&heavy_counter, 1);
+    return NULL;
+}
+
+// Unit test: Check if jobs execute correctly
+static bool test_scheduler_basic_execution() {
+
+    // Reset counter
+    atomic_store(&fast_counter, 0);
+
+    // Create scheduler configuration
+    lum_scheduler_config_t config = {0};
+    config.num_threads = 2;
+    config.queue_capacity = TEST_NUM_JOBS + 1; // Always include an empty slot
+    
+    lum_scheduler_t* scheduler = lum_scheduler_create(&config);
+    assert(scheduler != NULL && "Scheduler creation failed!");
+
+    // Submit jobs
+    for (int i = 0; i < TEST_NUM_JOBS; i++) {
+        //printf("..Submitting job %d/%d\n", i+1, TEST_NUM_JOBS);
+        // Note: the scheduler will free these job pointers
+        // after execution, so we *MUST* allocate them using the scheduler's allocator.
+        Job* job = lum_scheduler_create_job(scheduler, fast_job, (void*)(intptr_t)i);
+        lum_scheduler_submit(scheduler, job);
+    }
+
+    // Give some time for the jobs to execute
+    lum_thread_sleep(100);
+
+    // Shutdown the scheduler
+    lum_scheduler_destroy(scheduler);
+
+    // Validate that all jobs executed
+    assert(atomic_load(&fast_counter) == TEST_NUM_JOBS && "Not all jobs executed!");
+    return true;
+}
+
+// Unit test: Test multiple jobs with multi-threading
+static bool test_scheduler_multithreading() {
+
+    atomic_store(&fast_counter, 0);
+
+    // Create scheduler configuration
+    lum_scheduler_config_t config = {0};
+    config.num_threads = 4;
+    config.queue_capacity = TEST_NUM_JOBS * 2 + 1; // Always include an empty slot
+    
+    lum_scheduler_t* scheduler = lum_scheduler_create(&config);
+    assert(scheduler != NULL && "Scheduler creation failed!");
+
+    // Submit jobs
+    for (int i = 0; i < TEST_NUM_JOBS * 2; i++) {
+        // Note: the scheduler will free these job pointers
+        // after execution, so we *MUST* allocate them using the scheduler's allocator.
+        Job* job = lum_scheduler_create_job(scheduler, fast_job, (void*)(intptr_t)i);
+        lum_scheduler_submit(scheduler, job);
+    }
+
+    // Wait for jobs to complete
+    lum_thread_sleep(200);
+
+    // Shutdown the scheduler
+    lum_scheduler_destroy(scheduler);
+
+    // Validate that all jobs executed
+    assert(atomic_load(&fast_counter) == TEST_NUM_JOBS * 2 && "Not all jobs executed!");
+
+    return true;
+}
+
+static bool test_scheduler_stress() {
+    lum_scheduler_config_t config = {0};
+    config.num_threads = NUM_THREADS;
+    config.queue_capacity = TEST_NUM_JOBS + 1;  // Ensure no enqueue failure
+    lum_scheduler_t* scheduler = lum_scheduler_create(&config);
+    assert(scheduler != NULL && "Scheduler creation failed!");
+    atomic_store(&fast_counter, 0);
+    atomic_store(&heavy_counter, 0);
+
+    // Track start time
+    clock_t start = clock();
+    int fast_submissions = 0;
+    int heavy_submissions = 0;
+
+    // Submit jobs
+    for (int i = 0; i < TEST_NUM_JOBS; i++) {
+        void *arg = (void *)(intptr_t)i;
+        Job* job;
+
+        if (rand() % 2 == 0) {  // 50% chance for each job type
+            ++fast_submissions;
+            job = lum_scheduler_create_job(scheduler, fast_job, arg);
+        } else {
+            ++heavy_submissions;
+            job = lum_scheduler_create_job(scheduler, heavy_job, arg);
+        }
+        lum_scheduler_submit(scheduler, job);
+    }
+    // block until all jobs finished
+    lum_scheduler_wait_completion(scheduler);
+    // Cleanup.
+    lum_scheduler_destroy(scheduler);
+
+    // Track end time
+    clock_t end = clock();
+    double time_spent = (double)(end - start) / CLOCKS_PER_SEC;
+
+    printf("✅ Fast jobs completed: %d, submitted: %d\n", atomic_load(&fast_counter), fast_submissions);
+    printf("✅ Heavy jobs completed: %d, submitted: %d\n", atomic_load(&heavy_counter), heavy_submissions);
+    printf("⏱️ Total execution time: %.3f seconds\n", time_spent);
+
+    return true;
+}
+
+// **Define test cases**
+TestCase lum_scheduler_tests[] = {
+    {"test_scheduler_basic_execution", test_scheduler_basic_execution},
+    {"test_scheduler_multithreading", test_scheduler_multithreading},
+    {"test_scheduler_stress", test_scheduler_stress}
+};
+
+// **Test runner function**
+int lum_scheduler_tests_count = sizeof(lum_scheduler_tests) / sizeof(TestCase);

@@ -28,11 +28,40 @@
     typedef ConditionVariable lum_cond_var;
 #else
     #include <pthread.h>
+    #include <unistd.h>   // POSIX usleep
+    #include <sched.h>
     typedef pthread_t lum_thread; 
     typedef int lum_thread_id;
     typedef pthread_mutex_t lum_mutex;
     typedef pthread_cond_t lum_cond_var;
 #endif
+
+/**
+ * @brief Sleep the current thread for a specified number of milliseconds.
+ * @param milliseconds The duration to sleep.
+ */
+static inline void lum_thread_sleep(uint32_t milliseconds) {
+    if (milliseconds == 0) {
+        return;  // No-op for zero sleep
+    }
+
+#ifdef PLATFORM_WINDOWS
+    Sleep(milliseconds);
+#else
+    usleep(milliseconds * 1000);  // Faster than nanosleep
+#endif
+}
+
+static inline void lum_thread_yield() {
+#ifdef PLATFORM_WINDOWS
+    SwitchToThread();  // Windows equivalent
+#elif defined(PLATFORM_MACOS) || defined(PLATFORM_MACOS)
+    sched_yield();     // POSIX (Linux/macOS)
+#else
+    #error "Thread yielding not supported on this platform."
+#endif
+}
+
 
 // Thread function type
 typedef void* (*lum_thread_func)(void*);

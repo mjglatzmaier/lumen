@@ -5,6 +5,7 @@
 #include <stddef.h>
 #include <stdbool.h>
 #include "allocators/mem_alloc.h"
+#include "platform.h"
 
 
 // Defines a lockless queue type
