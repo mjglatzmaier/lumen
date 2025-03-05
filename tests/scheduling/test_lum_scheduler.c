@@ -155,11 +155,11 @@ static bool test_scheduler_stress()
     clock_t end        = clock();
     double  time_spent = (double) (end - start) / CLOCKS_PER_SEC;
 
-    printf("✅ Fast jobs completed: %d, submitted: %d\n", atomic_load(&fast_counter),
+    printf(" Fast jobs completed: %d, submitted: %d\n", atomic_load(&fast_counter),
            fast_submissions);
-    printf("✅ Heavy jobs completed: %d, submitted: %d\n", atomic_load(&heavy_counter),
+    printf(" Heavy jobs completed: %d, submitted: %d\n", atomic_load(&heavy_counter),
            heavy_submissions);
-    printf("⏱️ Total execution time: %.3f seconds\n", time_spent);
+    printf("⏱ Total execution time: %.3f seconds\n", time_spent);
 
     return true;
 }

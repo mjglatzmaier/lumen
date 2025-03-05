@@ -11,7 +11,7 @@
 
 #define TEST_CAPACITY 1024
 #define NUM_THREADS 8
-#define NUM_OPERATIONS 560 // should be a multiple of num_threads for now.
+#define NUM_OPERATIONS 1024 // should be a multiple of num_threads for now.
 
 typedef struct
 {
