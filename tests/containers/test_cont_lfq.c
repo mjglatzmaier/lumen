@@ -48,7 +48,7 @@ static bool test_basic_operations()
     TestItem *deq3 = (TestItem *) lum_lfq_dequeue(queue);
     assert(deq3 == NULL);
 
-    lum_lfq_free(queue);
+    lum_lfq_free(&queue);
     assert(queue == NULL);
 
     return true;
@@ -85,7 +85,7 @@ static bool test_queue_full()
     TestItem *deq = (TestItem *) lum_lfq_dequeue(queue);
     assert(deq == NULL);
 
-    lum_lfq_free(queue);
+    lum_lfq_free(&queue);
     assert(queue == NULL);
 
     return true;
@@ -119,8 +119,9 @@ static bool benchmark_queue()
     TestItem *deq = (TestItem *) lum_lfq_dequeue(queue);
     assert(deq == NULL);
 
-    lum_lfq_free(queue);
+    lum_lfq_free(&queue);
     assert(queue == NULL);
+
     return true;
 }
 

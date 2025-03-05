@@ -6,13 +6,13 @@
             "name": "Debug Lumen",
             "type": "cppdbg",
             "request": "launch",
-            "program": "${workspaceFolder}/build/Lumen",
+            "program": "/Users/mjg/code/lumen/build/LumenTests",
             "args": [],
             "stopAtEntry": false,
-            "cwd": "${workspaceFolder}",
+            "cwd": "/Users/mjg/code/lumen",
             "environment": [],
             "externalConsole": false,
-            "MIMode": "gdb",
+            "MIMode": "lldb",
             "setupCommands": [
                 { "text": "-enable-pretty-printing", "description": "Enable pretty printing", "ignoreFailures": true }
             ]

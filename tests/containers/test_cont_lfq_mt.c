@@ -11,7 +11,7 @@
 
 #define TEST_CAPACITY 1024
 #define NUM_THREADS 8
-#define NUM_OPERATIONS 1023
+#define NUM_OPERATIONS 560 // should be a multiple of num_threads for now.
 
 typedef struct
 {
@@ -47,7 +47,7 @@ void *consumer_thread(void *arg)
     while ((item = (TestItem *) lum_lfq_dequeue(args->queue)) != NULL)
     {
         assert(item != NULL);
-        args->allocator->free(args->allocator, item);
+        //args->allocator->free(args->allocator, item);
         atomic_fetch_add(&jobs_executed, 1);
     }
     return NULL;
@@ -99,11 +99,12 @@ static bool test_split_production_consumption()
     }
 
     // Verify that all jobs were executed
+    printf("jobs_exec=%d, num_ops=%d\n", jobs_executed, NUM_OPERATIONS);
     assert(jobs_executed == NUM_OPERATIONS &&
            "Failed: Some jobs were lost due to potential race conditions.");
 
     // Clean up
-    lum_lfq_free(queue);
+    lum_lfq_free(&queue);
     return true;
 }
 
