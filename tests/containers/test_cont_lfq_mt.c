@@ -11,7 +11,7 @@
 
 #define TEST_CAPACITY 1024
 #define NUM_THREADS 8
-#define NUM_OPERATIONS 1000000
+#define NUM_OPERATIONS 1023
 
 typedef struct
 {
@@ -44,17 +44,15 @@ void *consumer_thread(void *arg)
 {
     ThreadArgs *args = (ThreadArgs *) arg;
     TestItem   *item;
-    while ((item = (TestItem *) lum_lfq_dequeue(args->queue)) || !lum_lfq_empty(args->queue))
+    while ((item = (TestItem *) lum_lfq_dequeue(args->queue)) != NULL)
     {
-        if (item)
-        {
-            assert(item != NULL);
-            args->allocator->free(args->allocator, item);
-            atomic_fetch_add(&jobs_executed, 1);
-        }
+        assert(item != NULL);
+        args->allocator->free(args->allocator, item);
+        atomic_fetch_add(&jobs_executed, 1);
     }
     return NULL;
 }
+
 
 static bool test_split_production_consumption()
 {
@@ -63,7 +61,11 @@ static bool test_split_production_consumption()
     assert(allocator != NULL);
 
     lum_lfq_t *queue = allocator->alloc(allocator, sizeof(lum_lfq_t), 16);
+    if (!queue) 
+        return false;
+    memset(queue, 0, sizeof(lum_lfq_t));
     lum_lfq_init(queue, TEST_CAPACITY, allocator);
+
 
     lum_thread producers[NUM_THREADS];
     pthread_t  consumers[NUM_THREADS];

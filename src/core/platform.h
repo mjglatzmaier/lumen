@@ -30,6 +30,7 @@ typedef ConditionVariable lum_cond_var;
 #include <pthread.h>
 #include <sched.h>
 #include <unistd.h> // POSIX usleep
+#include <stdint.h>
 typedef pthread_t       lum_thread;
 typedef int             lum_thread_id;
 typedef pthread_mutex_t lum_mutex;
@@ -58,10 +59,8 @@ static inline void lum_thread_yield()
 {
 #ifdef PLATFORM_WINDOWS
     SwitchToThread(); // Windows equivalent
-#elif defined(PLATFORM_MACOS) || defined(PLATFORM_MACOS)
-    sched_yield(); // POSIX (Linux/macOS)
 #else
-#error "Thread yielding not supported on this platform."
+    sched_yield(); // POSIX (Linux/macOS)
 #endif
 }
 

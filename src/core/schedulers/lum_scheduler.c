@@ -62,18 +62,15 @@ void *worker_thread_function(void *arg)
         {
             // Queue is empty, wait for a new job
             lum_mutex_lock(&s->job_lock);
-            while ((job = lum_lfq_dequeue(s->config->queue)) == NULL && atomic_load(&s->running))
-            {
+            // Wait until we are explicitly signaled that work is available
+            while (atomic_load(&s->running) && lum_lfq_empty(s->config->queue)) {
                 lum_cond_wait(&s->job_available, &s->job_lock);
             }
-            // Fetch a job once awake
-            if (!job)
-                job = lum_lfq_dequeue(s->config->queue);
-
+            
+            job = lum_lfq_dequeue(s->config->queue);
             lum_mutex_unlock(&s->job_lock);
         }
-
-        // If a job was retrieved, execute it
+        
         if (job)
             execute_job(job, s);
     }
@@ -173,7 +170,7 @@ void lum_scheduler_submit(lum_scheduler_t *scheduler, Job *job)
     if (!lum_lfq_enqueue(scheduler->config->queue, job))
     {
         printf("Queue is full! Job submission failed. Capacity %zu.\n",
-               scheduler->config->queue->capacity);
+            scheduler->config->queue->capacity);
     }
     else
     {
@@ -223,8 +220,7 @@ void lum_scheduler_destroy(lum_scheduler_t *scheduler)
 
     if (scheduler->config->threads)
     {
-        scheduler->config->allocator->free(scheduler->config->allocator,
-                                           scheduler->config->threads);
+        scheduler->config->allocator->free(scheduler->config->allocator, scheduler->config->threads);
         scheduler->config->threads = NULL;
     }
 
