@@ -4,3 +4,6 @@
 [submodule "submodules/FastNoiseLite"]
 	path = submodules/FastNoiseLite
 	url = https://github.com/Auburn/FastNoiseLite.git
+[submodule "submodules/libdivide"]
+	path = submodules/libdivide
+	url = https://github.com/ridiculousfish/libdivide.git

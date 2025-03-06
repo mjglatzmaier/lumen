@@ -36,6 +36,7 @@ void execute_job(Job *job, lum_scheduler_t *s)
 
     // Execute the job function with the provided data
     job->function(job->data);
+    
     lum_mutex_lock(&s->job_lock);
     if (atomic_fetch_sub(&s->jobs_remaining, 1) == 1)
     {

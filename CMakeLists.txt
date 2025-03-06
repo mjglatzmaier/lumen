@@ -92,6 +92,7 @@ endif()
 add_executable(LumenTests
     tests/runner.c
     tests/math/math_mat_tests.c
+    tests/math/math_mod_tests.c
     tests/math/math_vec_tests.c
     tests/memory/test_alloc_benchmark.c
     tests/memory/test_alloc_general.c

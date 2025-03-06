@@ -36,6 +36,7 @@
         "span": "cpp",
         "atomic": "cpp",
         "stdio.h": "c",
-        "*.tcc": "c"
+        "*.tcc": "c",
+        "limits.h": "c"
     }
 }

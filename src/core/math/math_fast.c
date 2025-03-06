@@ -1,4 +1,5 @@
 #include "math_fast.h"
+#include "libdivide.h"
 
 // Fast Approximate `sinf(x)` (Remez Polynomial Approximation)
 // From quake
@@ -99,3 +100,26 @@ float lum_fast_recipf(float x)
     u.i = 0x7EEEEEEE - u.i;
     return u.f;
 }
+
+// N must be a power of 2.
+int lum_fast_mod_pow2(int x, int N) {
+    return x & (N - 1);
+}
+
+/** Note: benchmarks reveal % is MUCH faster for small numbers and no slower for large numbers on macos */
+uint32_t lum_fast_mod32(uint32_t x, uint32_t C) {
+    struct libdivide_u32_t fast_C = libdivide_u32_gen(C);
+    return x - libdivide_u32_do(x, &fast_C) * C;
+}
+
+/** Leaving these as a todo - they are not faster than % on mac */
+
+
+// inline uint64_t lum_fast_mod64(uint64_t x, uint64_t C) {
+//     uint64_t M = (UINT64_MAX / C) + 1;  
+//     return x - ((__uint128_t)x * M >> 64) * C;
+// }
+
+// inline int lum_fast_mod(int x, int C) {
+//     return (int)lum_fast_mod32((uint32_t)x, (uint32_t)C);
+// }

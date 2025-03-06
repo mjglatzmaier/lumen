@@ -37,6 +37,8 @@ target_include_directories(LumenCore PUBLIC
     ${CMAKE_CURRENT_SOURCE_DIR}/memory
     ${CMAKE_CURRENT_SOURCE_DIR}/threads
     ${CMAKE_CURRENT_SOURCE_DIR}/schedulers
+    # Submodules
+    ${CMAKE_CURRENT_SOURCE_DIR}/../../submodules/libdivide
 )
 
 # Compiler Flags for SIMD

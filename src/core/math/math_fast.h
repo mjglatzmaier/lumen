@@ -3,6 +3,8 @@
 
 #include <math.h>
 #include <stdint.h>
+#include <stddef.h>
+#include <limits.h>
 
 #ifdef __cplusplus
 extern "C" {
@@ -26,6 +28,12 @@ float lum_fast_rsqrtf(float x);
 
 // Fast Reciprocal (1/x)
 float lum_fast_recipf(float x);
+
+// fast mod
+int lum_fast_mod_pow2(int x, int N);
+ uint32_t lum_fast_mod32(uint32_t word, uint32_t p);
+// uint64_t lum_fast_mod64(uint64_t word, uint64_t p);
+// int lum_fast_mod(int word, int p);
 
 #ifdef __cplusplus
 }
