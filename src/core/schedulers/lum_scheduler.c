@@ -36,7 +36,7 @@ void execute_job(Job *job, lum_scheduler_t *s)
 
     // Execute the job function with the provided data
     job->function(job->data);
-    
+
     lum_mutex_lock(&s->job_lock);
     if (atomic_fetch_sub(&s->jobs_remaining, 1) == 1)
     {
@@ -120,8 +120,6 @@ lum_scheduler_t *lum_scheduler_create(lum_scheduler_config_t *config)
     // Threads
     if (config->num_threads <= 0)
         config->num_threads = 4;
-    if (config->thread_type == 0) // Default if unset
-        config->thread_type = LUM_THREAD_TASK;
     if (!config->threads)
     {
         config->threads = allocator->alloc(allocator, config->num_threads * sizeof(lum_thread_t),

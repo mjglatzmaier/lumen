@@ -1,5 +1,6 @@
 #include "../test_framework.h"
 #include "math_fast.h"
+#include "libdivide.h"
 
 #include <stdio.h>
 #include <stdint.h>

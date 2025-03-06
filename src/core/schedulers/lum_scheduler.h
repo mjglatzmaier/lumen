@@ -10,7 +10,13 @@ typedef enum
 {
     LUM_SCHEDULER_ROUND_ROBIN,
     LUM_SCHEDULER_WORK_STEALING
-} lum_scheduler_type;
+} lum_balance_policy_t;
+
+typedef enum {
+    LUM_QUEUE_FIFO,      // Default lock-free queue
+    LUM_QUEUE_PRIORITY,  // Priority queue (min/max heap)
+    LUM_QUEUE_PER_THREAD // Work-stealing thread-local queues
+} lum_queue_type_t;
 
 typedef enum
 {
@@ -21,14 +27,13 @@ typedef enum
 
 typedef struct
 {
-    lum_wait_policy_t  wait_policy;
-    lum_scheduler_type type;
-    lum_thread_type    thread_type; // Task or NUMA
-    size_t             num_threads;
-    size_t             queue_capacity;
-    lum_allocator     *allocator;
-    lum_lfq_t         *queue;
-    lum_thread_t      *threads;
+    lum_wait_policy_t       wait_policy;
+    lum_balance_policy_t    type;
+    size_t                  num_threads;
+    size_t                  queue_capacity;
+    lum_allocator          *allocator;
+    lum_lfq_t              *queue; // Per thread?
+    lum_thread_t           *threads;
 } lum_scheduler_config_t;
 
 typedef struct
