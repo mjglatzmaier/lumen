@@ -28,8 +28,8 @@ Lumen is a learning project.  It provides **bare-metal control in C** and is for
 ### Prerequisites
 - **C Compiler** (GCC/Clang/MSVC)
 - **CMake** (Recommended)
-- **OpenGL/Vulkan SDK** (For rendering)
-- **SDL2 or GLFW** (For windowing and input)
+- **Vulkan SDK** (For rendering)
+- **GLFW** (For windowing and input)
 
 ### Build & Run
 
