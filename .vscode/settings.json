@@ -35,6 +35,7 @@
         "variant": "c",
         "span": "cpp",
         "atomic": "cpp",
-        "stdio.h": "c"
+        "stdio.h": "c",
+        "*.tcc": "c"
     }
 }

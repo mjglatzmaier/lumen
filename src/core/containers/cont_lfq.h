@@ -79,7 +79,8 @@ static inline bool lum_lfq_empty(lum_lfq_t *queue)
 {
     assert(queue != NULL);
     size_t head = atomic_load_explicit(&queue->head, memory_order_acquire);
-    return head == atomic_load_explicit(&queue->tail, memory_order_relaxed);
+    size_t tail = atomic_load_explicit(&queue->tail, memory_order_relaxed);
+    return (head % queue->capacity) == (tail % queue->capacity);
 }
 
 // Check if queue is full

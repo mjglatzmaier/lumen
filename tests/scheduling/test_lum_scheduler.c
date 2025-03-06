@@ -1,4 +1,5 @@
 #include "../memory/allocators/mem_alloc.h"
+#include "../math/math_rand.h"
 #include "../test_framework.h"
 #include "lum_scheduler.h"
 #include "lum_thread.h"
@@ -17,6 +18,11 @@
 atomic_int fast_counter  = 0;
 atomic_int heavy_counter = 0;
 
+typedef struct {
+    int id;
+    float    result;
+} jobArg;
+
 // Simple job function that increments the counter
 void *fast_job(void *arg)
 {
@@ -28,17 +34,24 @@ void *fast_job(void *arg)
 // Heavy compute job: Monte Carlo Pi estimation
 static void *heavy_job(void *arg)
 {
-    (void) arg;
+    jobArg *ja = (jobArg*) arg;
+    if (!ja) 
+        return NULL;
+
+    pcg32_random_t rng = { .state = ja->id * 123456789u, .inc = (ja->id * 987654321u) | 1 };
     int inside_circle = 0;
+    
     for (int i = 0; i < PI_ITERATIONS; i++)
     {
-        double x = (double) rand() / RAND_MAX;
-        double y = (double) rand() / RAND_MAX;
+        double x = (double) pcg32_random_r(&rng) / UINT32_MAX;
+        double y = (double) pcg32_random_r(&rng) / UINT32_MAX;
         if (x * x + y * y <= 1.0)
             inside_circle++;
     }
-    double pi_estimate = (4.0 * inside_circle) / PI_ITERATIONS;
+
+    ja->result = (4.0 * inside_circle) / PI_ITERATIONS;
     atomic_fetch_add(&heavy_counter, 1);
+    printf("Thread %d result: %.6f\n", ja->id, ja->result);
     return NULL;
 }
 
@@ -117,7 +130,7 @@ static bool test_scheduler_stress()
 {
     lum_scheduler_config_t config = {0};
     config.num_threads            = NUM_THREADS;
-    config.queue_capacity         = TEST_NUM_JOBS + 1; // Ensure no enqueue failure
+    config.queue_capacity         = TEST_NUM_JOBS;
     lum_scheduler_t *scheduler    = lum_scheduler_create(&config);
     assert(scheduler != NULL && "Scheduler creation failed!");
     atomic_store(&fast_counter, 0);
@@ -128,10 +141,14 @@ static bool test_scheduler_stress()
     int     fast_submissions  = 0;
     int     heavy_submissions = 0;
 
+    jobArg args[TEST_NUM_JOBS];
+
     // Submit jobs
     for (int i = 0; i < TEST_NUM_JOBS; i++)
     {
-        void *arg = (void *) (intptr_t) i;
+        args[i].id = i % NUM_THREADS;
+        args[i].result = 0;
+        void *arg = (void *) &args[i];
         Job  *job;
 
         if (rand() % 2 == 0)
@@ -150,6 +167,12 @@ static bool test_scheduler_stress()
     lum_scheduler_wait_completion(scheduler);
     // Cleanup.
     lum_scheduler_destroy(scheduler);
+
+    for (int i = 0; i < TEST_NUM_JOBS; i++) {
+        if (args[i].result != 0) {
+            printf("Job %d result: %.6f\n", i, args[i].result);
+        }
+    }
 
     // Track end time
     clock_t end        = clock();

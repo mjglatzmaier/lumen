@@ -58,6 +58,13 @@ void *worker_thread_function(void *arg)
     {
         Job *job = lum_lfq_dequeue(s->config->queue);
 
+        // Fast spin before sleeping
+        // int spin_count = 1000;
+        // while (!job && spin_count--) {
+        //     sched_yield();
+        //     job = lum_lfq_dequeue(s->config->queue);
+        // }
+
         if (!job)
         {
             // Queue is empty, wait for a new job
@@ -166,7 +173,8 @@ void lum_scheduler_submit_batch(lum_scheduler_t *scheduler, Job **jobs, size_t c
 
 void lum_scheduler_submit(lum_scheduler_t *scheduler, Job *job)
 {
-    lum_mutex_lock(&scheduler->submission_lock);
+    // TODO: this queue should be lockless - refactor.
+    //lum_mutex_lock(&scheduler->submission_lock);
     if (!lum_lfq_enqueue(scheduler->config->queue, job))
     {
         printf("Queue is full! Job submission failed. Capacity %zu.\n",
@@ -177,7 +185,7 @@ void lum_scheduler_submit(lum_scheduler_t *scheduler, Job *job)
         atomic_fetch_add(&scheduler->jobs_remaining, 1);
         lum_cond_signal(&scheduler->job_available);
     }
-    lum_mutex_unlock(&scheduler->submission_lock);
+    //lum_mutex_unlock(&scheduler->submission_lock);
 }
 
 void lum_scheduler_wait_completion(lum_scheduler_t *scheduler)

@@ -8,6 +8,7 @@ set(LUM_CORE_SRC
     math/math_mat3.c
     math/math_mat4.c
     math/math_fast.c
+    math/math_rand.c
     # MEMORY
     memory/allocators/mem_general.c
     memory/allocators/mem_frame.c
