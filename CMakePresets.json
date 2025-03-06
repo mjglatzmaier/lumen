@@ -14,7 +14,9 @@
       "cacheVariables": {
         "CMAKE_BUILD_TYPE": "Debug",
         "CMAKE_EXPORT_COMPILE_COMMANDS": "YES",
-        "CMAKE_TOOLCHAIN_FILE": "${sourceDir}/../mcl/vcpkg/scripts/buildsystems/vcpkg.cmake"
+        "CMAKE_TOOLCHAIN_FILE": "${sourceDir}/../mcl/vcpkg/scripts/buildsystems/vcpkg.cmake",
+        "USE_SIMD": "ON",
+        "USE_MIMALLOC": "ON"
       },
       "condition": {
         "type": "anyOf",
@@ -47,7 +49,9 @@
         "CMAKE_CXX_COMPILER": "clang++",
         "CMAKE_TOOLCHAIN_FILE": "${sourceDir}/../mcl/vcpkg/scripts/buildsystems/vcpkg.cmake",
         "CMAKE_BUILD_TYPE": "Debug",
-        "CMAKE_EXPORT_COMPILE_COMMANDS": "YES"
+        "CMAKE_EXPORT_COMPILE_COMMANDS": "YES", 
+        "USE_SIMD": "ON",
+        "USE_MIMALLOC": "ON"
       },
       "condition": {
         "type": "equals",
@@ -64,8 +68,10 @@
         "CMAKE_C_COMPILER": "gcc",
         "CMAKE_CXX_COMPILER": "g++",
         "CMAKE_TOOLCHAIN_FILE": "${sourceDir}/../mcl/vcpkg/scripts/buildsystems/vcpkg.cmake",
-        "CMAKE_BUILD_TYPE": "Debug",
-        "CMAKE_EXPORT_COMPILE_COMMANDS": "YES"
+        "CMAKE_BUILD_TYPE": "Release",
+        "CMAKE_EXPORT_COMPILE_COMMANDS": "YES", 
+        "USE_SIMD": "ON",
+        "USE_MIMALLOC": "ON"
       },
       "condition": {
         "type": "equals",
@@ -82,8 +88,10 @@
         "CMAKE_C_COMPILER": "clang",
         "CMAKE_CXX_COMPILER": "clang++",
         "CMAKE_TOOLCHAIN_FILE": "${sourceDir}/../mcl/vcpkg/scripts/buildsystems/vcpkg.cmake",
-        "CMAKE_BUILD_TYPE": "Debug",
-        "CMAKE_EXPORT_COMPILE_COMMANDS": "YES"
+        "CMAKE_BUILD_TYPE": "Release",
+        "CMAKE_EXPORT_COMPILE_COMMANDS": "YES", 
+        "USE_SIMD": "ON",
+        "USE_MIMALLOC": "ON"
       },
       "condition": {
         "type": "equals",
@@ -101,7 +109,9 @@
         "CMAKE_CXX_COMPILER": "cl",
         "CMAKE_TOOLCHAIN_FILE": "${sourceDir}/../mcl/vcpkg/scripts/buildsystems/vcpkg.cmake",
         "CMAKE_BUILD_TYPE": "Debug",
-        "CMAKE_EXPORT_COMPILE_COMMANDS": "YES"
+        "CMAKE_EXPORT_COMPILE_COMMANDS": "YES", 
+        "USE_SIMD": "ON",
+        "USE_MIMALLOC": "ON"
       },
       "condition": {
         "type": "equals",
@@ -120,7 +130,7 @@
       "configurePreset": "linux-clang"
     },
     {
-      "name": "linux-gcc",
+      "name": "linux",
       "configurePreset": "linux-gcc"
     },
     {
