@@ -42,6 +42,8 @@ void execute_job(Job *job, lum_scheduler_t *s)
         lum_cond_signal(&s->job_done); // Signal main thread if last job
     }
     lum_mutex_unlock(&s->job_lock);
+
+    // TODO: introduce a job pool
     if (s)
     {
         s->config->allocator->free(s->config->allocator, job);
@@ -57,13 +59,6 @@ void *worker_thread_function(void *arg)
     while (atomic_load(&s->running))
     {
         Job *job = lum_lfq_dequeue(s->config->queue);
-
-        // Fast spin before sleeping
-        // int spin_count = 1000;
-        // while (!job && spin_count--) {
-        //     sched_yield();
-        //     job = lum_lfq_dequeue(s->config->queue);
-        // }
 
         if (!job)
         {

@@ -7,7 +7,6 @@
 
 void lum_thread_init(lum_thread_t *worker, int id, lum_thread_func func, void *arg)
 {
-    printf("Initializing Worker %d\n", id);
     atomic_store(&worker->running, true);
     worker->thread = lum_thread_create(func, arg);
 }

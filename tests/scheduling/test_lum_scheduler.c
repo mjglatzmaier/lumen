@@ -20,7 +20,7 @@ atomic_int heavy_counter = 0;
 
 typedef struct {
     int id;
-    float    result;
+    float result;
 } jobArg;
 
 // Simple job function that increments the counter
@@ -51,7 +51,6 @@ static void *heavy_job(void *arg)
 
     ja->result = (4.0 * inside_circle) / PI_ITERATIONS;
     atomic_fetch_add(&heavy_counter, 1);
-    printf("Thread %d result: %.6f\n", ja->id, ja->result);
     return NULL;
 }
 
@@ -65,7 +64,7 @@ static bool test_scheduler_basic_execution()
     // Create scheduler configuration
     lum_scheduler_config_t config = {0};
     config.num_threads            = 2;
-    config.queue_capacity         = TEST_NUM_JOBS + 1; // Always include an empty slot
+    config.queue_capacity         = TEST_NUM_JOBS; // Always include an empty slot
 
     lum_scheduler_t *scheduler = lum_scheduler_create(&config);
     assert(scheduler != NULL && "Scheduler creation failed!");
@@ -73,7 +72,6 @@ static bool test_scheduler_basic_execution()
     // Submit jobs
     for (int i = 0; i < TEST_NUM_JOBS; i++)
     {
-        // printf("..Submitting job %d/%d\n", i+1, TEST_NUM_JOBS);
         //  Note: the scheduler will free these job pointers
         //  after execution, so we *MUST* allocate them using the scheduler's allocator.
         Job *job = lum_scheduler_create_job(scheduler, fast_job, (void *) (intptr_t) i);
@@ -163,16 +161,19 @@ static bool test_scheduler_stress()
         }
         lum_scheduler_submit(scheduler, job);
     }
-    // block until all jobs finished
+    
     lum_scheduler_wait_completion(scheduler);
-    // Cleanup.
+    
     lum_scheduler_destroy(scheduler);
-
+    
+    float pi_avg = 0;
     for (int i = 0; i < TEST_NUM_JOBS; i++) {
         if (args[i].result != 0) {
-            printf("Job %d result: %.6f\n", i, args[i].result);
+            pi_avg += args[i].result;
         }
     }
+    pi_avg /= atomic_load(&heavy_counter);
+    printf("pi avg=%.6f\n", pi_avg);
 
     // Track end time
     clock_t end        = clock();

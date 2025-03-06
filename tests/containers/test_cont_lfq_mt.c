@@ -37,7 +37,6 @@ void *producer_thread(void *arg)
         item->value    = i + (args->thread_id * args->num_items);
         lum_lfq_enqueue(args->queue, item);
     }
-    return NULL;
 }
 
 void *consumer_thread(void *arg)
@@ -50,7 +49,6 @@ void *consumer_thread(void *arg)
         //args->allocator->free(args->allocator, item);
         atomic_fetch_add(&jobs_executed, 1);
     }
-    return NULL;
 }
 
 
