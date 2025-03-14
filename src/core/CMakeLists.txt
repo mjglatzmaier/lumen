@@ -2,7 +2,12 @@ project(LumenCore C)
 
 # Define Source Files
 set(LUM_CORE_SRC
+    # HASHING
+    hash/metrohash64.c
+    hash/murmurhash.c
+    hash/xxhash.c
     # MATH
+    math/math_hash.c
     math/math_vec3.c
     math/math_vec4.c
     math/math_mat3.c
@@ -20,6 +25,7 @@ set(LUM_CORE_SRC
     schedulers/lum_scheduler.c
     # CONTAINERS
     containers/cont_da.c
+    containers/cont_hm.c
 )
 
 # Create the LumenCore Library

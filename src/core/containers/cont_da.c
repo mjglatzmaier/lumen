@@ -9,8 +9,6 @@ lum_da *lum_da_create(size_t elem_size, size_t capacity, lum_allocator *allocato
     lum_da *da = allocator->realloc(allocator, NULL, sizeof(lum_da), DARR_ALIGN);
     if (!da) return NULL;
 
-    //size_t capacity = (count > 0) ? count : 1;
-
     da->data = allocator->realloc(allocator, NULL, capacity * elem_size, DARR_ALIGN);
     if (!da->data) {
         allocator->free(allocator, da);
