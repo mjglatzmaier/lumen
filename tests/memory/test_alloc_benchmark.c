@@ -14,7 +14,7 @@
 #define MAX_SIZE 1024
 
 // **Benchmarking default malloc/free**
-static bool benchmark_default_alloc()
+static bool benchmark_default_alloc(void)
 {
     void *ptrs[NUM_ALLOCATIONS];
     for (int i = 0; i < NUM_ALLOCATIONS; i++)
@@ -35,7 +35,7 @@ static bool benchmark_default_alloc()
 }
 
 // **Benchmarking mimalloc**
-static bool benchmark_mimalloc()
+static bool benchmark_mimalloc(void)
 {
 #ifdef USE_MIMALLOC
     void *ptrs[NUM_ALLOCATIONS];

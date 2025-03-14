@@ -5,7 +5,7 @@
 #include <stdio.h>
 
 // Test 1: Basic allocation & reset
-static bool test_frame_alloc_basic()
+static bool test_frame_alloc_basic(void)
 {
     size_t         frame_size  = 1024;
     lum_allocator *frame_alloc = lum_create_frame_allocator(frame_size);
@@ -26,7 +26,7 @@ static bool test_frame_alloc_basic()
 }
 
 // Test 2: Allocating beyond frame limits
-static bool test_frame_alloc_overflow()
+static bool test_frame_alloc_overflow(void)
 {
     size_t         frame_size  = 512;
     lum_allocator *frame_alloc = lum_create_frame_allocator(frame_size);
@@ -42,7 +42,7 @@ static bool test_frame_alloc_overflow()
 }
 
 // Test 3: Alignment check
-static bool test_frame_alloc_alignment()
+static bool test_frame_alloc_alignment(void)
 {
     size_t         frame_size  = 1024;
     lum_allocator *frame_alloc = lum_create_frame_allocator(frame_size);

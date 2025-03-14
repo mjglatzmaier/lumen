@@ -101,6 +101,7 @@ add_executable(LumenTests
     tests/memory/test_alloc_pool.c
     tests/scheduling/test_lum_scheduler.c
     tests/containers/test_cont_da.c
+    tests/containers/test_cont_hm.c
     tests/containers/test_cont_lfq.c
     tests/containers/test_cont_lfq_mt.c)
 

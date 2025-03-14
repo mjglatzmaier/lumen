@@ -5,7 +5,7 @@
 #define BENCH_ITERATIONS 1000000
 
 // **Mat4 Identity Test**
-bool test_mat4_identity()
+bool test_mat4_identity(void)
 {
     lum_mat4 m;
     lum_mat4_identity(&m);
@@ -16,7 +16,7 @@ bool test_mat4_identity()
     return true;
 }
 
-static bool test_mat4_mul_bench()
+static bool test_mat4_mul_bench(void)
 {
     lum_mat4 a, b, result;
     lum_mat4_identity(&a);
@@ -34,7 +34,7 @@ static bool test_mat4_mul_bench()
     return true;
 }
 
-static bool test_mat4_scale_bench()
+static bool test_mat4_scale_bench(void)
 {
     lum_mat4 a, result;
     lum_mat4_identity(&a);
@@ -51,7 +51,7 @@ static bool test_mat4_scale_bench()
     return true;
 }
 
-static bool test_mat4_transpose_bench()
+static bool test_mat4_transpose_bench(void)
 {
     lum_mat4 a, result;
     lum_mat4_identity(&a);
@@ -67,7 +67,7 @@ static bool test_mat4_transpose_bench()
     return true;
 }
 
-static bool test_mat4_add_bench()
+static bool test_mat4_add_bench(void)
 {
     lum_mat4 a, b, result;
     lum_mat4_identity(&a);
@@ -85,7 +85,7 @@ static bool test_mat4_add_bench()
     return true;
 }
 
-static bool test_mat4_vec4_bench()
+static bool test_mat4_vec4_bench(void)
 {
     lum_mat4 a;
     lum_vec4 b, result;
