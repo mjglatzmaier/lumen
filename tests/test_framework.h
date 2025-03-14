@@ -69,7 +69,7 @@ typedef struct
 #define DECLARE_TEST(test_name) {#test_name, test_name}
 
 // **Helper Function for Time Measurement**
-static inline double get_wall_time()
+static inline double get_wall_time(void)
 {
     struct timeval time;
     gettimeofday(&time, NULL);

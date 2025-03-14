@@ -55,7 +55,7 @@ static void *heavy_job(void *arg)
 }
 
 // Unit test: Check if jobs execute correctly
-static bool test_scheduler_basic_execution()
+static bool test_scheduler_basic_execution(void)
 {
 
     // Reset counter
@@ -90,7 +90,7 @@ static bool test_scheduler_basic_execution()
 }
 
 // Unit test: Test multiple jobs with multi-threading
-static bool test_scheduler_multithreading()
+static bool test_scheduler_multithreading(void)
 {
 
     atomic_store(&fast_counter, 0);
@@ -124,7 +124,7 @@ static bool test_scheduler_multithreading()
     return true;
 }
 
-static bool test_scheduler_stress()
+static bool test_scheduler_stress(void)
 {
     lum_scheduler_config_t config = {0};
     config.num_threads            = NUM_THREADS;

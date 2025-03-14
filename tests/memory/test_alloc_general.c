@@ -19,7 +19,7 @@ static void run_alloc(lum_allocator *allocator, size_t size, size_t alignment, i
 }
 
 // Test: Basic Allocation
-static bool test_general_alloc_basic()
+static bool test_general_alloc_basic(void)
 {
     lum_allocator *allocator = lum_create_default_allocator();
 
@@ -32,7 +32,7 @@ static bool test_general_alloc_basic()
 }
 
 // Test: Reallocation
-static bool test_general_realloc()
+static bool test_general_realloc(void)
 {
     lum_allocator *allocator = lum_create_default_allocator();
 
@@ -49,7 +49,7 @@ static bool test_general_realloc()
 }
 
 // Benchmark: Default
-static bool benchmark_general_alloc()
+static bool benchmark_general_alloc(void)
 {
     lum_allocator *allocator = lum_create_default_allocator();
     run_alloc(allocator, ALLOC_SIZE, ALIGNMENT, NUM_ITERATIONS);

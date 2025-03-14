@@ -4,7 +4,7 @@
 #include <math.h>
 
 // **Vec3 Addition**
-bool test_vec3_add()
+static bool test_vec3_add(void)
 {
     lum_vec3 a      = {1.0f, 2.0f, 3.0f};
     lum_vec3 b      = {4.0f, 5.0f, 6.0f};
@@ -17,7 +17,7 @@ bool test_vec3_add()
 }
 
 // **Vec3 Dot Product**
-bool test_vec3_dot()
+static bool test_vec3_dot(void)
 {
     lum_vec3 a      = {1.0f, 2.0f, 3.0f};
     lum_vec3 b      = {4.0f, 5.0f, 6.0f};

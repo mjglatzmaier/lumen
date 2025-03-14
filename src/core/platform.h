@@ -55,7 +55,7 @@ static inline void lum_thread_sleep(uint32_t milliseconds)
 #endif
 }
 
-static inline void lum_thread_yield()
+static inline void lum_thread_yield(void)
 {
 #ifdef PLATFORM_WINDOWS
     SwitchToThread(); // Windows equivalent

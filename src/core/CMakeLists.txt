@@ -18,6 +18,8 @@ set(LUM_CORE_SRC
     threads/lum_thread.c
     # SCHEDULING
     schedulers/lum_scheduler.c
+    # CONTAINERS
+    containers/cont_da.c
 )
 
 # Create the LumenCore Library

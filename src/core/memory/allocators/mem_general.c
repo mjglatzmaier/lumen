@@ -69,7 +69,7 @@ static void general_reset(lum_allocator *self)
 #endif
 }
 
-lum_allocator *lum_create_default_allocator()
+lum_allocator *lum_create_default_allocator(void)
 {
     lum_allocator *allocator =
         (lum_allocator *) general_alloc(NULL, sizeof(lum_allocator), _Alignof(lum_allocator));
@@ -86,8 +86,7 @@ lum_allocator *lum_create_default_allocator()
 /**
  * Frees the allocator instance
  */
-void lum_allocator_destroy(lum_allocator *allocator)
-{
+void lum_allocator_destroy(lum_allocator *allocator) {
     if (!allocator)
         return;
     general_free(NULL, allocator);
