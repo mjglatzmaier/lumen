@@ -1,55 +1,49 @@
 #ifndef LUM_CONT_DA_H
 #define LUM_CONT_DA_H
 
-#define STB_DS_IMPLEMENTATION
 #include "allocators/mem_alloc.h"
 #include "allocators/mem_pool.h"
 #include "platform.h"
 
 #include <stddef.h>
+#include <stdio.h>
 
 #define DARR_ALIGN 16
 
-// Thread-local default allocator
-static THREAD_LOCAL lum_allocator *thread_local_allocator = NULL;
+typedef struct {
+    void *data;          // Start of allocated memory
+    void *end;           // End of allocated memory (capacity limit)
+    void *next;          // Pointer to next free slot
+    size_t elem_size;    // Size of each element
+    size_t length;
+    lum_allocator *allocator;  // Allocator used for this array
+} lum_da;
 
-// Set the thread-local allocator safely
-static inline void lum_set_thread_local_allocator(lum_allocator *allocator)
-{
-    thread_local_allocator = allocator ? allocator : lum_create_default_allocator();
+#define lum_da_data(da, type) ((type *)(da->data))
+lum_da *lum_da_create(size_t elem_size, size_t capacity, lum_allocator *allocator);
+size_t lum_da_size(lum_da *da);
+void lum_da_free(lum_da *da);
+
+static inline void lum_da_grow(lum_da *da) {
+    size_t old_capacity = (size_t)((char *)da->end - (char *)da->data) / da->elem_size;
+    size_t new_capacity = old_capacity * 2 + 1;
+    ptrdiff_t index_offset = (char *)da->next - (char *)da->data;
+    void *new_data = da->allocator->realloc(da->allocator, da->data, new_capacity * da->elem_size, DARR_ALIGN);
+    if (!new_data)
+        return;
+    da->data = new_data;
+    da->next = (char *)new_data + index_offset;
+    da->end = (char *)new_data + (new_capacity * da->elem_size);
 }
 
-#define STBDS_REALLOC(context, ptr, size)                                                          \
-    ((thread_local_allocator)                                                                      \
-         ? thread_local_allocator->realloc(thread_local_allocator, ptr, size, DARR_ALIGN)          \
-         : NULL)
-#define STBDS_FREE(context, ptr)                                                                   \
-    ((thread_local_allocator) ? thread_local_allocator->free(thread_local_allocator, ptr) : NULL)
+#define lum_da_app(da, value)                                 \
+    do {                                                      \
+        if ((da)->next >= (da)->end) {                        \
+            lum_da_grow(da);                                  \
+        }                                                     \
+        ((typeof(value) *)(da)->next)[0] = (value);           \
+        (da)->next = (char *)(da)->next + (da)->elem_size;    \
+    } while (0)
 
-#include "stb_ds.h"
 
-static inline void *lum_create_dynamic_array_internal(size_t elem_size, size_t count,
-                                                      lum_allocator *allocator)
-{
-    if (!allocator)
-    {
-        allocator = lum_create_pool_allocator(elem_size, count);
-    }
-    lum_set_thread_local_allocator(allocator);
-    return NULL; // `stb_ds` will handle actual memory allocation later
-}
-
-// Creates thread local allocator to be used in stb_ds.h
-// Example useage: create_dynamic_arr_with_allocator(double, 1024, NULL);
-// Will create a pool array with max size 1024 (not dynamic)
-// To create a dynamic array pass in the default allocator
-#define lum_da_create(type, count, allocator)                                                      \
-    ((type *) lum_create_dynamic_array_internal(sizeof(type), count, allocator))
-
-#define lum_da_size(a) stbds_arrlen(a)
-#define lum_da_reserve(a, n) stbds_arrgrow(a, n, 1)
-#define lum_da_free(a) stbds_arrfree(a)
-#define lum_da_pop(a) stbds_arrpop(a)
-#define lum_da_app(a, v) stbds_arrput(a, v)
-
-#endif
+#endif // LUM_CONT_DA_H

@@ -9,7 +9,7 @@
 #define ALIGNMENT 16    // Ensure SIMD alignment
 
 // Test: Basic Stack Allocation
-bool test_stack_alloc_basic()
+bool test_stack_alloc_basic(void)
 {
     lum_allocator *stack_alloc = lum_create_stack_allocator(STACK_SIZE);
     ASSERT_NOT_NULL(stack_alloc);
@@ -28,7 +28,7 @@ bool test_stack_alloc_basic()
 }
 
 // Test: Stack Reset
-bool test_stack_alloc_reset()
+bool test_stack_alloc_reset(void)
 {
     lum_allocator *stack_alloc = lum_create_stack_allocator(STACK_SIZE);
     ASSERT_NOT_NULL(stack_alloc);
@@ -49,7 +49,7 @@ bool test_stack_alloc_reset()
 }
 
 // Test: Alignment Check
-bool test_stack_alloc_alignment()
+bool test_stack_alloc_alignment(void)
 {
     lum_allocator *stack_alloc = lum_create_stack_allocator(STACK_SIZE);
     ASSERT_NOT_NULL(stack_alloc);
@@ -64,7 +64,7 @@ bool test_stack_alloc_alignment()
     return true;
 }
 
-bool test_stack_alloc_pop()
+bool test_stack_alloc_pop(void)
 {
     lum_allocator *stack_alloc = lum_create_stack_allocator(STACK_SIZE);
     ASSERT_NOT_NULL(stack_alloc);

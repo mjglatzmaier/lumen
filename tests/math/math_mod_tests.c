@@ -24,7 +24,7 @@ static inline uint64_t fast_mod64(uint64_t x, uint64_t C) {
 }
 
 // Benchmark mod(a, p) with a and p near 2^32-1
-static bool benchmark_fastmod32() {
+static bool benchmark_fastmod32(void) {
     uint32_t sum1 = 0, sum2 = 0;
     uint32_t a, p;
 

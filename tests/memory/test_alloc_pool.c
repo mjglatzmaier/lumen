@@ -14,7 +14,7 @@ typedef struct
 } Point3D;
 
 // Benchmark helper
-static double get_time_ms()
+static double get_time_ms(void)
 {
     struct timespec ts;
     clock_gettime(CLOCK_MONOTONIC, &ts);
@@ -22,7 +22,7 @@ static double get_time_ms()
 }
 
 // Test 1: Basic allocation & reset
-static bool test_pool_allocator()
+static bool test_pool_allocator(void)
 {
     // Create a pool allocator for Point3D structs
     lum_allocator *pool_alloc = lum_create_pool_allocator(sizeof(Point3D), NUM_OBJECTS);
@@ -74,7 +74,7 @@ static bool test_pool_allocator()
 }
 
 // Test 2: Allocating beyond frame limits
-static bool benchmark_pool_vs_malloc()
+static bool benchmark_pool_vs_malloc(void)
 {
 
     Point3D *objects[NUM_OBJECTS];
