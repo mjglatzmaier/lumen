@@ -13,7 +13,7 @@ lum_hm *lum_hm_create(size_t capacity, lum_hash_func hash_func, lum_allocator *a
     hm->count = 0;
     hm->allocator = allocator;
     hm->hash_func = hash_func ? hash_func : lum_hash_murmur;
-    hm->entries = allocator->realloc(allocator, NULL, sizeof(lum_hm_entry) * hm->capacity, 16);
+    hm->entries = allocator->realloc(allocator, NULL, sizeof(lum_hm_entry) * hm->capacity, DHM_ALIGN);
     if (!hm->entries) {
         allocator->free(allocator, hm);
         return NULL;
