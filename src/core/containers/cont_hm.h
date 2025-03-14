@@ -9,6 +9,7 @@
 #include <stddef.h>
 #include <stdio.h>
 #include <stdbool.h>
+#include <memory.h>
 
 #define DHM_ALIGN 16
 
