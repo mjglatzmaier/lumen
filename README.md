@@ -1,4 +1,4 @@
-# Lumen - A Minimalist Game Engine
+# Lumen
 Lumen is a lightweight, minimal game engine designed for **high-performance real-time rendering and physics simulation**. Written primarily in **C**, Lumen focuses on **efficiency, simplicity, and direct hardware control**, while maintaining extensibility for future enhancements.
 
 ## Features
